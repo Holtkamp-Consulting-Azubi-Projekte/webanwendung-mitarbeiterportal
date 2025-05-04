@@ -32,7 +32,7 @@ const Login = () => {
         localStorage.setItem("email", data.email);
         navigate("/");
       } else {
-        setFehlermeldung(data.message || "Login fehlgeschlagen");
+        setFehlermeldung(data.message || "Login fehlgeschlagen. Bitte registrieren sie sich");
       }
     } catch (error) {
       setFehlermeldung("Verbindung zum Server fehlgeschlagen");
