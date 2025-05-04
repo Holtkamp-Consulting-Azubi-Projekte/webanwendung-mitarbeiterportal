@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -7,28 +9,50 @@ export default function Register() {
   const [passwortWdh, setPasswortWdh] = useState("");
   const [fehler, setFehler] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const navigate = useNavigate();
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
     if (!email || !passwort || !passwortWdh) {
       setFehler("Bitte fülle alle Felder aus.");
       return;
     }
-
+  
     if (!email.includes("@")) {
       setFehler("Bitte gib eine gültige E-Mail-Adresse ein.");
       return;
     }
-
+  
     if (passwort !== passwortWdh) {
       setFehler("Die Passwörter stimmen nicht überein.");
       return;
     }
-
-    setFehler("");
-    alert("Registrierung erfolgreich 🎉 (Hier später API-Aufruf)");
+  
+    try {
+      const response = await fetch("http://localhost:5000/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, passwort }),
+      });
+  
+      const daten = await response.json();
+  
+      if (!response.ok) {
+        setFehler(daten.fehler || "Unbekannter Fehler");
+      } else {
+        setFehler("");
+        alert(daten.nachricht || "Registrierung erfolgreich");
+        navigate("/login");
+            }
+    } catch (err) {
+      setFehler("Verbindung zum Server fehlgeschlagen");
+      console.error(err);
+    }
   };
-
+  
   return (
     <div className="mt-32 mx-auto max-w-sm p-6 bg-white shadow rounded">
       <h2 className="text-2xl font-bold mb-6 text-center text-purple-800">Registrieren</h2>
