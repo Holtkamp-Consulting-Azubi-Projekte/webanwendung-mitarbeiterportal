@@ -10,8 +10,8 @@ export default function Header() {
           <li><Link to="/zeiterfassung" className="hover:text-purple-800">Zeiterfassung</Link></li>
           <li><Link to="/projekte" className="hover:text-purple-800">Projekte</Link></li>
           <li><Link to="/profil" className="hover:text-purple-800">Profil</Link></li>
-          <li><Link to="/logout" className="hover:text-purple-800">Abmelden</Link></li>
-        </ul>
+          <li><Link to="/login" className="hover:text-purple-800">Anmelden</Link></li>
+          </ul>
       </nav>
     </header>
   );
