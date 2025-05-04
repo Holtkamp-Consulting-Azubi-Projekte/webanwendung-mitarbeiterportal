@@ -5,7 +5,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [fehler, setFehler] = useState("");
-
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,23 +16,20 @@ export default function Login() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/api/login", {
+      const response = await fetch("http://localhost:5050/api/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, passwort }),
       });
 
       const daten = await response.json();
 
       if (!response.ok) {
-        setFehler(daten.fehler || "Unbekannter Fehler");
+        setFehler(daten.error || "Unbekannter Fehler");
       } else {
         setFehler("");
-        alert(daten.nachricht || "Login erfolgreich");
-        // Optional: Session speichern, redirect etc.
-        navigate("/"); // z. B. zur Startseite
+        alert(daten.message || "Login erfolgreich ✅");
+        navigate("/"); // hier ggf. zur Startseite oder Dashboard
       }
     } catch (err) {
       setFehler("Verbindung zum Server fehlgeschlagen");

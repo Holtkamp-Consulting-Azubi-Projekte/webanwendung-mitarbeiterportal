@@ -1,75 +1,80 @@
 from flask import Flask, request, jsonify
-import json
-from pathlib import Path
-from datetime import datetime
 from flask_cors import CORS
-
+import os
+import json
+import hashlib
 
 app = Flask(__name__)
 CORS(app)
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-USERS_FILE = DATA_DIR / "users.json"
+DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data')
+USERS_FILE = os.path.join(DATA_PATH, 'users.json')
+
+
+def hash_password(password: str) -> str:
+    """Hasht das Passwort mit SHA256."""
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def load_users():
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r') as file:
+            return json.load(file)
+    return {}
+
+
+def save_users(users):
+    with open(USERS_FILE, 'w') as file:
+        json.dump(users, file, indent=4)
+
 
 @app.route("/api/register", methods=["POST"])
 def register():
-    daten = request.json
-    email = daten.get("email")
-    passwort = daten.get("passwort")
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("passwort")
 
-    if not email or not passwort:
-        return jsonify({"fehler": "E-Mail und Passwort erforderlich"}), 400
+    if not email or not password:
+        return jsonify({"error": "E-Mail und Passwort sind erforderlich"}), 400
 
-    # Lade bestehende Benutzer
-    if USERS_FILE.exists():
-        with open(USERS_FILE, "r") as f:
-            users = json.load(f)
-    else:
-        users = {}
+    users = load_users()
 
     if email in users:
-        return jsonify({"fehler": "Benutzer existiert bereits"}), 409
+        return jsonify({"error": "Benutzer existiert bereits"}), 409
 
-    # Neuen Benutzer speichern
     users[email] = {
-        "passwort": passwort,
-        "rolle": "user",
-        "registriertAm": datetime.utcnow().isoformat()
+        "passwort": hash_password(password)
     }
 
-    with open(USERS_FILE, "w") as f:
-        json.dump(users, f, indent=2)
-
-    return jsonify({"nachricht": "Registrierung erfolgreich"}), 201
+    save_users(users)
+    return jsonify({"message": "Registrierung erfolgreich ✅"}), 200
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    daten = request.json
-    email = daten.get("email")
-    passwort = daten.get("passwort")
+    data = request.get_json()
+    email = data.get("email")
+    passwort = data.get("passwort")
 
     if not email or not passwort:
-        return jsonify({"fehler": "E-Mail und Passwort erforderlich"}), 400
+        return jsonify({"error": "E-Mail und Passwort erforderlich"}), 400
 
-    # Lade Benutzer
-    if USERS_FILE.exists():
-        with open(USERS_FILE, "r") as f:
-            users = json.load(f)
-    else:
-        return jsonify({"fehler": "Benutzer-Datenbank fehlt"}), 500
-
+    users = load_users()
     user = users.get(email)
 
-    if not user or user.get("passwort") != passwort:
-        return jsonify({"fehler": "Ungültige Anmeldedaten"}), 401
+    if not user:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    # Login erfolgreich – Session optional speichern
+    eingegebener_hash = hash_password(passwort)
+    gespeicherter_hash = user.get("passwort")
+
+    if eingegebener_hash != gespeicherter_hash:
+        return jsonify({"error": "Falsches Passwort"}), 401
+
     return jsonify({
-        "nachricht": "Login erfolgreich",
-        "email": email,
-        "rolle": user.get("rolle", "user")
+        "message": "Login erfolgreich ✅",
+        "email": email
     }), 200
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5050)
