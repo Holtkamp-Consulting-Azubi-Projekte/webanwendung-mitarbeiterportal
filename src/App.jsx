@@ -1,22 +1,25 @@
+// src/App.jsx
 import { Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
+import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-
+import Logout from "./pages/Logout";
 
 function App() {
   return (
-    <div>
+    <>
+      {/* Header wird immer angezeigt */}
       <Header />
-      <main className="pt-24">
-        <Routes>
-          <Route path="/" element={<h1 className="text-3xl font-bold text-center text-purple-700">Startseite</h1>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
 
-        </Routes>
-      </main>
-    </div>
+      {/* Routen für Seiten */}
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/logout" element={<Logout />} />
+      </Routes>
+    </>
   );
 }
 

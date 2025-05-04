@@ -1,19 +1,23 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// src/pages/Login.jsx
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import logo from "../assets/logo.png"; // Logo einbinden
 
-export default function Login() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
-  const [fehler, setFehler] = useState("");
+  const [fehlermeldung, setFehlermeldung] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const eingeloggt = localStorage.getItem("email");
+    if (eingeloggt) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!email || !passwort) {
-      setFehler("Bitte fülle alle Felder aus.");
-      return;
-    }
 
     try {
       const response = await fetch("http://localhost:5050/api/login", {
@@ -22,62 +26,79 @@ export default function Login() {
         body: JSON.stringify({ email, passwort }),
       });
 
-      const daten = await response.json();
+      const data = await response.json();
 
-      if (!response.ok) {
-        setFehler(daten.error || "Unbekannter Fehler");
+      if (response.ok) {
+        localStorage.setItem("email", data.email);
+        navigate("/");
       } else {
-        setFehler("");
-        alert(daten.message || "Login erfolgreich ✅");
-        navigate("/"); // hier ggf. zur Startseite oder Dashboard
+        setFehlermeldung(data.message || "Login fehlgeschlagen");
       }
-    } catch (err) {
-      setFehler("Verbindung zum Server fehlgeschlagen");
-      console.error(err);
+    } catch (error) {
+      setFehlermeldung("Verbindung zum Server fehlgeschlagen");
     }
   };
 
   return (
-    <div className="mt-32 mx-auto max-w-sm p-6 bg-white shadow rounded">
-      <h2 className="text-2xl font-bold mb-6 text-center text-purple-800">Login</h2>
+    <div className="relative min-h-screen flex justify-center items-center bg-white">
+      {/* 💧 Zentrales Wasserzeichen-Logo */}
+      <img
+        src={logo}
+        alt="Firmenlogo"
+        className="absolute w-64 opacity-10 pointer-events-none select-none"
+        style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+      />
 
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-sm font-medium mb-1">E-Mail</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
+      {/* 🔐 Login-Formular */}
+      <form
+        onSubmit={handleSubmit}
+        className="relative z-10 bg-white p-8 rounded shadow-md w-96"
+      >
+        <h2 className="text-2xl font-bold mb-6 text-center text-purple-700">Anmelden</h2>
+
+        <label className="block mb-2 text-sm font-medium">E-Mail</label>
+        <input
+          type="email"
+          className="w-full px-3 py-2 mb-4 border rounded"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <label className="block mb-2 text-sm font-medium">Passwort</label>
+        <input
+          type="password"
+          className="w-full px-3 py-2 mb-4 border rounded"
+          value={passwort}
+          onChange={(e) => setPasswort(e.target.value)}
+          required
+        />
+
+        {fehlermeldung && (
+          <p className="text-red-600 text-sm mb-4">{fehlermeldung}</p>
+        )}
+
+        <div className="flex justify-center mt-4">
+          <button
+            type="submit"
+            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200"
+          >
+            Einloggen
+          </button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Passwort</label>
-          <input
-            type="password"
-            value={passwort}
-            onChange={(e) => setPasswort(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
-
-        {fehler && <p className="text-red-600 text-sm">{fehler}</p>}
-
-        <button
-          type="submit"
-          className="bg-purple-700 text-white py-2 px-4 rounded hover:bg-purple-800 transition"
-        >
-          Anmelden
-        </button>
+        <p className="mt-4 text-sm text-center">
+          Noch keinen Account?{" "}
+          <Link
+            to="/register"
+            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200"
+          >
+            Jetzt registrieren
+          </Link>
+        </p>
       </form>
-
-      <p className="mt-4 text-sm text-center">
-        Noch keinen Account?{" "}
-        <Link to="/register" className="text-purple-700 hover:underline">
-          Jetzt registrieren
-        </Link>
-      </p>
     </div>
   );
-}
+};
+
+export default Login;
