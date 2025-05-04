@@ -19,16 +19,38 @@ Dies ist eine moderne Webanwendung zur Verwaltung von Mitarbeitenden, Arbeitszei
 
 ## 🛠 Tech Stack
 
-| Bereich         | Technologie         |
-|----------------|---------------------|
-| **Frontend**   | React + Vite        |
-| **Styling**    | Tailwind CSS        |
-| **Backend**    | Python + Flask      |
-| **API-Sicherheit** | flask-cors      |
-| **Datenhaltung** | JSON-Dateien (z. B. `users.json`) |
-| **Hosting lokal** | Vite + Flask Dev Server |
-| **Deployment-ready** | Docker (geplant), systemd, Git |
-| **Datenbank (optional)** | PostgreSQL (für später)
+### Frontend
+- **React** – UI-Entwicklung mit Komponentenlogik und JSX  
+  🔗 [React Dokumentation](https://react.dev/)
+- **Vite** – Build-Tool für schnelle Entwicklung  
+  🔗 [Vite Dokumentation](https://vitejs.dev/)
+- **Tailwind CSS** – Utility-first CSS-Framework  
+  🔗 [Tailwind CSS Dokumentation](https://tailwindcss.com/)
+- **React Router DOM** – Clientseitiges Routing  
+  🔗 [React Router Dokumentation](https://reactrouter.com/en/main)
+
+### Backend
+- **Flask** – Python Webframework zur Erstellung von REST APIs  
+  🔗 [Flask Dokumentation](https://flask.palletsprojects.com/)
+- **Flask-CORS** – CORS-Handling für Cross-Origin-Anfragen  
+  🔗 [Flask-CORS Dokumentation](https://flask-cors.readthedocs.io/en/latest/)
+- **Gunicorn** – WSGI-HTTP Server für den produktiven Einsatz  
+  🔗 [Gunicorn Dokumentation](https://docs.gunicorn.org/en/stable/)
+
+### Datenhaltung
+- **JSON-Dateien** – Temporäre Speicherung der Benutzer-, Sitzungs- und Logdaten als Dictionaries
+- **PostgreSQL** – Für die produktive Datenbankanbindung vorbereitet  
+  🔗 [PostgreSQL Dokumentation](https://www.postgresql.org/docs/)
+- **DBVisualizer** – GUI zur Datenbankinspektion  
+  🔗 [DBVisualizer Guide](https://www.dbvis.com/docs/)
+
+### Hosting & Infrastruktur
+- **Nginx** – Reverse Proxy für das Hosting von Backend & Frontend  
+  🔗 [Nginx Dokumentation](https://nginx.org/en/docs/)
+- **Raspberry Pi** – Lokales Deployment auf Einplatinencomputer  
+  🔗 [Raspberry Pi Dokumentation](https://www.raspberrypi.com/documentation/)
+- **Python 3.13.3** – Laufzeitumgebung für das Flask-Backend  
+  🔗 [Python 3.13.3 Dokumentation](https://docs.python.org/3.13/)
 
 ---
 
