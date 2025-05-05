@@ -1,23 +1,22 @@
-// src/pages/Login.jsx
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import logo from "../assets/logo.png"; // Logo einbinden
 
-const Login = () => {
+export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [passwort, setPasswort] = useState("");
   const [fehlermeldung, setFehlermeldung] = useState("");
-  const navigate = useNavigate();
 
   useEffect(() => {
     const eingeloggt = localStorage.getItem("email");
     if (eingeloggt) {
-      navigate("/");
+      navigate("/"); // 👉 Wenn schon eingeloggt, direkt weiter
     }
   }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFehlermeldung("");
 
     try {
       const response = await fetch("http://localhost:5050/api/login", {
@@ -29,76 +28,64 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem("email", data.email);
+        // ✅ Speichere die Email und lade die Benutzerdaten, um den Vornamen zu holen
+        localStorage.setItem("email", email);
+
+        // Optional: Vornamen vom Server holen und speichern
+        const res = await fetch(`http://localhost:5050/api/user/${email}`);
+        if (res.ok) {
+          const userData = await res.json();
+          localStorage.setItem("vorname", userData.vorname || "");
+        }
+
         navigate("/");
       } else {
-        setFehlermeldung(data.message || "Login fehlgeschlagen. Bitte registrieren sie sich");
+        setFehlermeldung(data.message || "Login fehlgeschlagen. Bitte registrieren Sie sich.");
       }
-    } catch (error) {
-      setFehlermeldung("Verbindung zum Server fehlgeschlagen");
+    } catch (err) {
+      setFehlermeldung("Server nicht erreichbar");
     }
   };
 
   return (
-    <div className="relative min-h-screen flex justify-center items-center bg-white">
-      {/* 💧 Zentrales Wasserzeichen-Logo */}
-      <img
-        src={logo}
-        alt="Firmenlogo"
-        className="absolute w-64 opacity-10 pointer-events-none select-none"
-        style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
-      />
+    <div className="max-w-md mx-auto p-6 bg-white shadow rounded mt-10">
+      <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
 
-      {/* 🔐 Login-Formular */}
-      <form
-        onSubmit={handleSubmit}
-        className="relative z-10 bg-white p-8 rounded shadow-md w-96"
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center text-purple-700">Anmelden</h2>
+      {fehlermeldung && (
+        <div className="bg-red-100 text-red-700 p-2 rounded mb-4 border border-red-300 text-sm text-center">
+          {fehlermeldung}
+        </div>
+      )}
 
-        <label className="block mb-2 text-sm font-medium">E-Mail</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="email"
-          className="w-full px-3 py-2 mb-4 border rounded"
+          placeholder="E-Mail"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          required
+          className="w-full px-3 py-2 border rounded"
         />
-
-        <label className="block mb-2 text-sm font-medium">Passwort</label>
         <input
           type="password"
-          className="w-full px-3 py-2 mb-4 border rounded"
+          placeholder="Passwort"
           value={passwort}
           onChange={(e) => setPasswort(e.target.value)}
-          required
+          className="w-full px-3 py-2 border rounded"
         />
-
-        {fehlermeldung && (
-          <p className="text-red-600 text-sm mb-4">{fehlermeldung}</p>
-        )}
-
-        <div className="flex justify-center mt-4">
-          <button
-            type="submit"
-            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-          >
-            Einloggen
-          </button>
-        </div>
-
-        <p className="mt-4 text-sm text-center">
-          Noch keinen Account?{" "}
-          <Link
-            to="/register"
-            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200"
-          >
-            Jetzt registrieren
-          </Link>
-        </p>
+        <button
+          type="submit"
+          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700 w-full"
+        >
+          Einloggen
+        </button>
       </form>
+
+      <p className="mt-4 text-sm text-center">
+        Noch keinen Account?{" "}
+        <Link to="/register" className="text-purple-700 hover:underline">
+          Jetzt registrieren
+        </Link>
+      </p>
     </div>
   );
-};
-
-export default Login;
+}
