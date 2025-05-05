@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Mitarbeiter from "./pages/Mitarbeiter";
 import Projekte from "./pages/Projekte";
 import Zeiterfassung from "./pages/Zeiterfassung";
+import Einstellungen from "./pages/Einstellungen";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Logout from "./pages/Logout";
@@ -22,7 +23,7 @@ function App() {
           <Route path="/mitarbeiter" element={<Mitarbeiter />} />
           <Route path="/projekte" element={<Projekte />} />
           <Route path="/zeiten" element={<Zeiterfassung />} />
-
+          <Route path="/einstellungen" element={<Einstellungen />} />
 
         </Routes>
       </main>

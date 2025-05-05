@@ -16,11 +16,9 @@ PROJECTS_FILE = os.path.join(DATA_DIR, 'projects.json')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# 🔐 Passwort-Hashing
 def hash_password(passwort: str) -> str:
     return hashlib.sha256(passwort.encode("utf-8")).hexdigest()
 
-# 📁 JSON-Helfer
 def load_json(pfad):
     if not os.path.exists(pfad):
         with open(pfad, "w", encoding="utf-8") as f:
@@ -32,7 +30,6 @@ def save_json(daten, pfad):
     with open(pfad, "w", encoding="utf-8") as f:
         json.dump(daten, f, indent=2, ensure_ascii=False)
 
-# 🔐 Auth
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -45,7 +42,7 @@ def register():
         "vorname": data.get("vorname", ""),
         "nachname": data.get("nachname", ""),
         "rolle": data.get("rolle", "user"),
-        "eintritttsdatum": data.get("eintritttsdatum", ""),
+        "eintrittsdatum": data.get("eintrittsdatum", ""),
         "passwort": hash_password(data.get("passwort", ""))
     }
     save_json(users, USERS_FILE)
@@ -67,7 +64,6 @@ def logout():
     save_json({}, SESSION_FILE)
     return jsonify({"message": "Logout erfolgreich"}), 200
 
-# 👤 Benutzerinfos
 @app.route("/api/user/<email>", methods=["GET", "PUT"])
 def user(email):
     users = load_json(USERS_FILE)
@@ -83,12 +79,11 @@ def user(email):
             "vorname": daten.get("vorname", ""),
             "nachname": daten.get("nachname", ""),
             "rolle": daten.get("rolle", ""),
-            "eintritttsdatum": daten.get("eintritttsdatum", "")
+            "eintrittsdatum": daten.get("eintrittsdatum", "")
         })
         save_json(users, USERS_FILE)
         return jsonify({"message": "Profil aktualisiert"}), 200
 
-# 📁 Projekte
 @app.route("/api/projekte", methods=["GET", "POST"])
 def projekte():
     projekte = load_json(PROJECTS_FILE)
@@ -111,7 +106,6 @@ def projekt_loeschen(projekt_id):
         return jsonify({"message": "Projekt gelöscht"}), 200
     return jsonify({"error": "Projekt nicht gefunden"}), 404
 
-# 🕒 Zeiterfassung
 @app.route("/api/zeiten", methods=["GET"])
 def get_zeiten():
     return jsonify(load_json(TIMES_FILE)), 200
@@ -146,6 +140,5 @@ def stop_zeit():
     save_json(zeiten, TIMES_FILE)
     return jsonify(zeiten[key]), 200
 
-# 🚀 Serverstart
 if __name__ == "__main__":
     app.run(debug=True, port=5050)
