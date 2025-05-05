@@ -1,109 +1,151 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
-import json
-import hashlib
+import os, json, hashlib
 from datetime import datetime
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), '..', 'data')
-USERS_FILE = os.path.join(DATA_PATH, 'users.json')
-SESSION_FILE = os.path.join(DATA_PATH, 'session.json')
+# 🔧 Dateipfade
+BASE = os.path.abspath(os.path.dirname(__file__))
+DATA_DIR = os.path.join(BASE, '..', 'data')
+USERS_FILE = os.path.join(DATA_DIR, 'users.json')
+SESSION_FILE = os.path.join(DATA_DIR, 'session.json')
+TIMES_FILE = os.path.join(DATA_DIR, 'times.json')
+PROJECTS_FILE = os.path.join(DATA_DIR, 'projects.json')
 
+os.makedirs(DATA_DIR, exist_ok=True)
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+# 🔐 Passwort-Hashing
+def hash_password(passwort: str) -> str:
+    return hashlib.sha256(passwort.encode("utf-8")).hexdigest()
 
+# 📁 JSON-Helfer
+def load_json(pfad):
+    if not os.path.exists(pfad):
+        with open(pfad, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+    with open(pfad, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-def load_json(path):
-    if os.path.exists(path):
-        with open(path, 'r') as file:
-            try:
-                return json.load(file)
-            except json.JSONDecodeError:
-                return {}
-    return {} 
+def save_json(daten, pfad):
+    with open(pfad, "w", encoding="utf-8") as f:
+        json.dump(daten, f, indent=2, ensure_ascii=False)
 
-
-def save_json(data, path):
-    with open(path, 'w') as file:
-        json.dump(data, file, indent=4)
-
-
+# 🔐 Auth
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("passwort")
-
-    if not email or not password:
-        return jsonify({"error": "E-Mail und Passwort sind erforderlich"}), 400
-
     users = load_json(USERS_FILE)
-
+    email = data.get("email")
     if email in users:
         return jsonify({"error": "Benutzer existiert bereits"}), 409
 
     users[email] = {
-        "passwort": hash_password(password),
-        "rolle": "user"
+        "vorname": data.get("vorname", ""),
+        "nachname": data.get("nachname", ""),
+        "rolle": data.get("rolle", "user"),
+        "eintritttsdatum": data.get("eintritttsdatum", ""),
+        "passwort": hash_password(data.get("passwort", ""))
     }
-
     save_json(users, USERS_FILE)
-    return jsonify({"message": "Registrierung erfolgreich ✅"}), 200
-
+    return jsonify({"message": "Registrierung erfolgreich"}), 201
 
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
-    email = data.get("email")
-    passwort = data.get("passwort")
-
-    if not email or not passwort:
-        return jsonify({"error": "E-Mail und Passwort erforderlich"}), 400
-
     users = load_json(USERS_FILE)
-    user = users.get(email)
-
-    if not user:
-        return jsonify({"error": "Benutzer nicht gefunden"}), 404
-
-    if hash_password(passwort) != user.get("passwort"):
-        return jsonify({"error": "Falsches Passwort"}), 401
-
-    # Session speichern
-    sessions = load_json(SESSION_FILE)
-    sessions[email] = {
-        "loginZeit": datetime.utcnow().isoformat(),
-        "rolle": user.get("rolle", "user")
-    }
-    save_json(sessions, SESSION_FILE)
-
-    return jsonify({
-        "message": "Login erfolgreich ✅",
-        "email": email,
-        "rolle": user.get("rolle", "user")
-    }), 200
+    email = data.get("email")
+    pw = hash_password(data.get("passwort", ""))
+    if email in users and users[email]["passwort"] == pw:
+        save_json({"email": email, "login": datetime.now().isoformat()}, SESSION_FILE)
+        return jsonify({"message": "Login erfolgreich"}), 200
+    return jsonify({"error": "Login fehlgeschlagen"}), 401
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
+    save_json({}, SESSION_FILE)
+    return jsonify({"message": "Logout erfolgreich"}), 200
+
+# 👤 Benutzerinfos
+@app.route("/api/user/<email>", methods=["GET", "PUT"])
+def user(email):
+    users = load_json(USERS_FILE)
+    if email not in users:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+
+    if request.method == "GET":
+        return jsonify(users[email]), 200
+
+    if request.method == "PUT":
+        daten = request.get_json()
+        users[email].update({
+            "vorname": daten.get("vorname", ""),
+            "nachname": daten.get("nachname", ""),
+            "rolle": daten.get("rolle", ""),
+            "eintritttsdatum": daten.get("eintritttsdatum", "")
+        })
+        save_json(users, USERS_FILE)
+        return jsonify({"message": "Profil aktualisiert"}), 200
+
+# 📁 Projekte
+@app.route("/api/projekte", methods=["GET", "POST"])
+def projekte():
+    projekte = load_json(PROJECTS_FILE)
+    if request.method == "GET":
+        return jsonify(projekte), 200
+
+    if request.method == "POST":
+        data = request.get_json()
+        id = datetime.now().isoformat()
+        projekte[id] = data
+        save_json(projekte, PROJECTS_FILE)
+        return jsonify({id: data}), 201
+
+@app.route("/api/projekte/<projekt_id>", methods=["DELETE"])
+def projekt_loeschen(projekt_id):
+    projekte = load_json(PROJECTS_FILE)
+    if projekt_id in projekte:
+        del projekte[projekt_id]
+        save_json(projekte, PROJECTS_FILE)
+        return jsonify({"message": "Projekt gelöscht"}), 200
+    return jsonify({"error": "Projekt nicht gefunden"}), 404
+
+# 🕒 Zeiterfassung
+@app.route("/api/zeiten", methods=["GET"])
+def get_zeiten():
+    return jsonify(load_json(TIMES_FILE)), 200
+
+@app.route("/api/zeiten/start", methods=["POST"])
+def start_zeit():
     data = request.get_json()
+    zeiten = load_json(TIMES_FILE)
+    start = data.get("start")
+    zeiten[start] = {
+        "email": data.get("email"),
+        "start": start,
+        "end": None,
+        "projekt": data.get("projekt", "")
+    }
+    save_json(zeiten, TIMES_FILE)
+    return jsonify({"message": "Startzeit erfasst"}), 201
+
+@app.route("/api/zeiten/stop", methods=["POST"])
+def stop_zeit():
+    data = request.get_json()
+    zeiten = load_json(TIMES_FILE)
     email = data.get("email")
+    end = data.get("end")
 
-    if not email:
-        return jsonify({"error": "E-Mail erforderlich für Logout"}), 400
+    offene = [(k, v) for k, v in zeiten.items() if v["email"] == email and v.get("end") is None]
+    if not offene:
+        return jsonify({"error": "Keine offene Zeit gefunden"}), 404
 
-    sessions = load_json(SESSION_FILE)
+    key = sorted(offene)[-1][0]
+    zeiten[key]["end"] = end
+    save_json(zeiten, TIMES_FILE)
+    return jsonify(zeiten[key]), 200
 
-    if email in sessions:
-        del sessions[email]
-        save_json(sessions, SESSION_FILE)
-        return jsonify({"message": f"{email} wurde ausgeloggt ✅"}), 200
-    else:
-        return jsonify({"message": "Benutzer war nicht eingeloggt"}), 200
-
-
+# 🚀 Serverstart
 if __name__ == "__main__":
     app.run(debug=True, port=5050)

@@ -8,8 +8,8 @@ export default function Header() {
   const istAuthSeite = ["/login", "/register"].includes(location.pathname);
 
   return (
-    <header className="bg-gray-100 border-b-2 border-purple-700 py-4">
-      <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
+    <header className="fixed top-0 left-0 w-full z-50 bg-gray-100 border-b-2 border-purple-700 py-4">
+        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center">
         
         {/* 🔧 Logo-Bereich */}
         <div className="flex items-center space-x-2">

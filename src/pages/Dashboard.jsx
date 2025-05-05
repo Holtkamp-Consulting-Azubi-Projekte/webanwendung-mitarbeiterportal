@@ -52,7 +52,7 @@ export default function Dashboard() {
         */}
         <Link
           to="/logout"
-          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200"
+          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
         >
           Logout
         </Link>
