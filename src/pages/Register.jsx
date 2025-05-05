@@ -1,91 +1,121 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [passwort, setPasswort] = useState("");
-  const [fehler, setFehler] = useState("");
+  const [formDaten, setFormDaten] = useState({
+    vorname: "",
+    nachname: "",
+    email: "",
+    passwort: "",
+    eintrittsdatum: "",
+  });
+  const [fehlermeldung, setFehlermeldung] = useState("");
 
-  // ✅ Weiterleitung, wenn bereits eingeloggt
-  useEffect(() => {
-    const eingeloggt = localStorage.getItem("email");
-    if (eingeloggt) {
-      navigate("/");
-    }
-  }, [navigate]);
+  const handleChange = (e) => {
+    setFormDaten({
+      ...formDaten,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFehlermeldung("");
 
-    if (!email || !passwort) {
-      setFehler("Bitte fülle alle Felder aus.");
+    const { vorname, nachname, email, passwort, eintrittsdatum } = formDaten;
+
+    if (!vorname || !nachname || !email || !passwort || !eintrittsdatum) {
+      setFehlermeldung("Bitte alle Felder ausfüllen.");
       return;
     }
 
     try {
-      const response = await fetch("http://localhost:5050/api/register", {
+      const res = await fetch("http://localhost:5050/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, passwort }),
+        body: JSON.stringify({ ...formDaten, rolle: "user" }),
       });
 
-      const daten = await response.json();
-
-      if (!response.ok) {
-        setFehler(daten.error || "Registrierung fehlgeschlagen");
-      } else {
-        setFehler("");
-        localStorage.setItem("email", email);
-        navigate("/");
+      if (!res.ok) {
+        if (res.status === 409) {
+          throw new Error("Benutzer existiert bereits.");
+        }
+        throw new Error("Registrierung fehlgeschlagen.");
       }
+
+      localStorage.setItem("email", email); // ✅ Speichern für spätere API-Aufrufe
+      navigate("/"); // ✅ Weiterleitung ins Dashboard
+
     } catch (err) {
-      setFehler("Verbindung zum Server fehlgeschlagen");
-      console.error(err);
+      setFehlermeldung(err.message);
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center text-purple-700">Registrieren</h2>
+    <div className="max-w-md mx-auto p-6 bg-white shadow rounded mt-10">
+      <h2 className="text-2xl font-bold mb-4 text-center">Registrieren</h2>
 
-        <label className="block mb-2 text-sm font-medium">E-Mail</label>
+      {fehlermeldung && (
+        <div className="bg-red-100 text-red-700 p-2 rounded mb-4 border border-red-300 text-sm text-center">
+          {fehlermeldung}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="text"
+          name="vorname"
+          placeholder="Vorname"
+          value={formDaten.vorname}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
+        />
+        <input
+          type="text"
+          name="nachname"
+          placeholder="Nachname"
+          value={formDaten.nachname}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
+        />
         <input
           type="email"
-          className="w-full px-3 py-2 mb-4 border rounded"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          name="email"
+          placeholder="E-Mail"
+          value={formDaten.email}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
         />
-
-        <label className="block mb-2 text-sm font-medium">Passwort</label>
         <input
           type="password"
-          className="w-full px-3 py-2 mb-4 border rounded"
-          value={passwort}
-          onChange={(e) => setPasswort(e.target.value)}
-          required
+          name="passwort"
+          placeholder="Passwort"
+          value={formDaten.passwort}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
         />
-
-        {fehler && <p className="text-red-600 text-sm mb-4">{fehler}</p>}
-
-        <div className="flex justify-center mt-4">
-          <button
-            type="submit"
-            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-          >
-            Registrieren
-          </button>
-        </div>
-
-        <p className="mt-4 text-sm text-center">
-          Schon ein Konto?{" "}
-          <Link to="/login" className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200">
-            Jetzt einloggen
-          </Link>
-        </p>
+        <input
+          type="date"
+          name="eintrittsdatum"
+          value={formDaten.eintrittsdatum}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border rounded"
+        />
+        <button
+          type="submit"
+          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700 w-full"
+        >
+          Registrieren
+        </button>
       </form>
+
+      <p className="mt-4 text-sm text-center">
+        Bereits einen Account?{" "}
+        <Link to="/login" className="text-purple-700 hover:underline">
+          Zum Login
+        </Link>
+      </p>
     </div>
   );
 }
