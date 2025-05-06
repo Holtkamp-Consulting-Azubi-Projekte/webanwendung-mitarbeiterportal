@@ -3,9 +3,14 @@ import { useEffect, useState } from "react";
 const Projekte = () => {
   const [projekte, setProjekte] = useState({});
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [neuesProjekt, setNeuesProjekt] = useState({ name: "", beschreibung: "" });
+  const [bearbeitetesProjekt, setBearbeitetesProjekt] = useState({ id: "", name: "", beschreibung: "" });
   const [fehlermeldung, setFehlermeldung] = useState("");
   const [info, setInfo] = useState("");
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [projektToDelete, setProjektToDelete] = useState(null);
 
   useEffect(() => {
     fetch("http://localhost:5050/api/projekte")
@@ -21,6 +26,7 @@ const Projekte = () => {
     e.preventDefault();
     if (!neuesProjekt.name.trim()) {
       setFehlermeldung("Projektname darf nicht leer sein.");
+      setTimeout(() => setFehlermeldung(""), 4000);
       return;
     }
 
@@ -31,7 +37,7 @@ const Projekte = () => {
     });
 
     if (response.ok) {
-      const neu = await response.json(); // { id: {...} }
+      const neu = await response.json();
       setProjekte((prev) => ({ ...prev, ...neu }));
       setNeuesProjekt({ name: "", beschreibung: "" });
       setShowModal(false);
@@ -39,6 +45,29 @@ const Projekte = () => {
       setTimeout(() => setInfo(""), 3000);
     } else {
       setFehlermeldung("Erstellen fehlgeschlagen ❌");
+      setTimeout(() => setFehlermeldung(""), 4000);
+    }
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    const { id, name, beschreibung } = bearbeitetesProjekt;
+
+    const response = await fetch(`http://localhost:5050/api/projekte/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, beschreibung }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setProjekte(data);
+      setInfo("Projekt aktualisiert ✅");
+      setTimeout(() => setInfo(""), 3000);
+      setShowEditModal(false);
+    } else {
+      setFehlermeldung("Aktualisierung fehlgeschlagen ❌");
+      setTimeout(() => setFehlermeldung(""), 4000);
     }
   };
 
@@ -47,6 +76,8 @@ const Projekte = () => {
       method: "DELETE",
     });
 
+    const result = await response.json();
+
     if (response.ok) {
       const kopie = { ...projekte };
       delete kopie[id];
@@ -54,8 +85,12 @@ const Projekte = () => {
       setInfo("Projekt gelöscht ✅");
       setTimeout(() => setInfo(""), 3000);
     } else {
-      setFehlermeldung("Löschen fehlgeschlagen ❌");
+      setFehlermeldung(result.error || "Löschen fehlgeschlagen ❌");
+      setTimeout(() => setFehlermeldung(""), 4000);
     }
+
+    setShowConfirmModal(false);
+    setProjektToDelete(null);
   };
 
   return (
@@ -89,12 +124,20 @@ const Projekte = () => {
             <h3 className="font-bold text-lg">{projekt.name}</h3>
             <p className="text-sm text-gray-600">{projekt.beschreibung}</p>
             <div className="mt-2 flex gap-2">
-              {/* Bearbeiten kommt später */}
-              <button className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700">
+              <button
+                onClick={() => {
+                  setBearbeitetesProjekt({ id, name: projekt.name, beschreibung: projekt.beschreibung });
+                  setShowEditModal(true);
+                }}
+                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+              >
                 Bearbeiten
               </button>
               <button
-                onClick={() => handleDelete(id)}
+                onClick={() => {
+                  setProjektToDelete(id);
+                  setShowConfirmModal(true);
+                }}
                 className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
               >
                 Löschen
@@ -104,7 +147,7 @@ const Projekte = () => {
         ))}
       </ul>
 
-      {/* Modal */}
+      {/* Neues Projekt Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded shadow w-full max-w-md">
@@ -145,6 +188,74 @@ const Projekte = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bearbeiten-Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4 text-purple-700">Projekt bearbeiten</h3>
+            <form className="space-y-4" onSubmit={handleEditSave}>
+              <input
+                type="text"
+                value={bearbeitetesProjekt.name}
+                onChange={(e) =>
+                  setBearbeitetesProjekt({ ...bearbeitetesProjekt, name: e.target.value })
+                }
+                className="w-full border p-2 rounded"
+              />
+              <textarea
+                value={bearbeitetesProjekt.beschreibung}
+                onChange={(e) =>
+                  setBearbeitetesProjekt({ ...bearbeitetesProjekt, beschreibung: e.target.value })
+                }
+                className="w-full border p-2 rounded"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  Speichern
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bestätigungsmodal für Löschen */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded shadow w-full max-w-md text-center">
+            <h3 className="text-lg font-bold mb-4 text-red-700">Projekt löschen</h3>
+            <p className="mb-6">Möchtest du dieses Projekt wirklich löschen?</p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setProjektToDelete(null);
+                }}
+                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => handleDelete(projektToDelete)}
+                className="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition duration-200"
+              >
+                Löschen bestätigen
+              </button>
+            </div>
           </div>
         </div>
       )}

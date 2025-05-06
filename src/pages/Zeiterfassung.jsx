@@ -5,6 +5,11 @@ export default function Zeiterfassung() {
   const [running, setRunning] = useState(false);
   const [selectedProjekt, setSelectedProjekt] = useState("");
   const [projekte, setProjekte] = useState([]);
+  const [filterProjekt, setFilterProjekt] = useState("");
+  const [filterVon, setFilterVon] = useState("");
+  const [filterBis, setFilterBis] = useState("");
+  const [sortierung, setSortierung] = useState(() => localStorage.getItem("sortierung") || "neu");
+
   const email = localStorage.getItem("email");
 
   useEffect(() => {
@@ -82,34 +87,25 @@ export default function Zeiterfassung() {
     return `${h}h ${m}m`;
   }
 
-  function berechneUebersicht(eintraege) {
-    const heute = new Date();
-    const wochenstart = new Date(heute);
-    wochenstart.setDate(heute.getDate() - heute.getDay() + 1); // Montag
+  const gefilterteEintraege = eintraege.filter((z) => {
+    const start = new Date(z.start);
+    const projektOk = filterProjekt ? z.projekt === filterProjekt : true;
+    const vonOk = filterVon ? start >= new Date(filterVon) : true;
+    const bisOk = filterBis ? start <= new Date(filterBis) : true;
+    return projektOk && vonOk && bisOk;
+  });
 
-    let minutenHeute = 0;
-    let minutenWoche = 0;
+  const sortierteEintraege = [...gefilterteEintraege].sort((a, b) =>
+    sortierung === "neu"
+      ? new Date(b.start) - new Date(a.start)
+      : new Date(a.start) - new Date(b.start)
+  );
 
-    eintraege.forEach((e) => {
-      if (!e.end) return;
-      const start = new Date(e.start);
-      const end = new Date(e.end);
-      const dauer = berechneDauer(start, end);
-
-      if (start.toDateString() === heute.toDateString()) {
-        minutenHeute += dauer;
-      }
-
-      if (start >= wochenstart) {
-        minutenWoche += dauer;
-      }
-    });
-
-    return {
-      heute: formatiereDauer(minutenHeute),
-      woche: formatiereDauer(minutenWoche),
-    };
-  }
+  const handleSortChange = (e) => {
+    const value = e.target.value;
+    setSortierung(value);
+    localStorage.setItem("sortierung", value);
+  };
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow rounded mt-6">
@@ -139,24 +135,66 @@ export default function Zeiterfassung() {
         </button>
       </div>
 
-      {eintraege.length > 0 && (
-        <div className="bg-gray-100 border p-4 rounded mb-6 text-sm text-center">
-          <p className="font-semibold">Arbeitszeit Übersicht:</p>
-          {(() => {
-            const { heute, woche } = berechneUebersicht(eintraege);
-            return (
-              <>
-                <p>Heute: <strong>{heute}</strong></p>
-                <p>Diese Woche: <strong>{woche}</strong></p>
-              </>
-            );
-          })()}
-        </div>
-      )}
+      <div className="mb-6 border p-4 rounded bg-gray-50">
+        <h2 className="font-semibold mb-3">Filter</h2>
 
-      <h2 className="text-lg font-semibold mb-2">Bisherige Einträge</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+          <select
+            value={filterProjekt}
+            onChange={(e) => setFilterProjekt(e.target.value)}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">Alle Projekte</option>
+            {projekte.map(([id, p]) => (
+              <option key={id} value={p.name}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="date"
+            value={filterVon}
+            onChange={(e) => setFilterVon(e.target.value)}
+            className="border px-3 py-2 rounded"
+          />
+
+          <input
+            type="date"
+            value={filterBis}
+            onChange={(e) => setFilterBis(e.target.value)}
+            className="border px-3 py-2 rounded"
+          />
+        </div>
+
+        <button
+          onClick={() => {
+            setFilterProjekt("");
+            setFilterVon("");
+            setFilterBis("");
+          }}
+          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+        >
+          Filter zurücksetzen
+        </button>
+
+        <div className="mt-4">
+          <label className="block mb-1 font-medium">Sortierung:</label>
+          <select
+            value={sortierung}
+            onChange={handleSortChange}
+            className="border px-3 py-2 rounded w-full"
+          >
+            <option value="neu">Neueste zuerst</option>
+            <option value="alt">Älteste zuerst</option>
+          </select>
+        </div>
+      </div>
+
+      <h2 className="text-lg font-semibold mb-2">Einträge</h2>
+
       <div className="text-sm text-gray-700 space-y-2">
-        {eintraege.map((z, i) => (
+        {sortierteEintraege.map((z, i) => (
           <div key={i} className="border p-2 rounded bg-gray-50">
             <div><strong>Projekt:</strong> {z.projekt || "-"}</div>
             <div><strong>Start:</strong> {new Date(z.start).toLocaleString()}</div>
@@ -164,8 +202,14 @@ export default function Zeiterfassung() {
               <strong>Stopp:</strong>{" "}
               {z.end ? new Date(z.end).toLocaleString() : <em>läuft…</em>}
             </div>
+            {z.end && (
+              <div><strong>Dauer:</strong> {formatiereDauer(berechneDauer(z.start, z.end))}</div>
+            )}
           </div>
         ))}
+        {sortierteEintraege.length === 0 && (
+          <p className="text-gray-400 text-center">Keine passenden Einträge gefunden.</p>
+        )}
       </div>
     </div>
   );

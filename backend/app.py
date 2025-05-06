@@ -97,14 +97,31 @@ def projekte():
         save_json(projekte, PROJECTS_FILE)
         return jsonify({id: data}), 201
 
-@app.route("/api/projekte/<projekt_id>", methods=["DELETE"])
-def projekt_loeschen(projekt_id):
+@app.route("/api/projekte/<projekt_id>", methods=["DELETE", "PUT"])
+def projekt_bearbeiten_oder_loeschen(projekt_id):
     projekte = load_json(PROJECTS_FILE)
-    if projekt_id in projekte:
+
+    if projekt_id not in projekte:
+        return jsonify({"error": "Projekt nicht gefunden"}), 404
+
+    if request.method == "DELETE":
+        zeiten = load_json(TIMES_FILE)
+        projektname = projekte[projekt_id]["name"]
+
+        for z in zeiten.values():
+            if z["projekt"] == projektname and z["end"] is None:
+                return jsonify({"error": "Projekt ist aktiv und kann nicht gelöscht werden."}), 400
+
         del projekte[projekt_id]
         save_json(projekte, PROJECTS_FILE)
         return jsonify({"message": "Projekt gelöscht"}), 200
-    return jsonify({"error": "Projekt nicht gefunden"}), 404
+
+    if request.method == "PUT":
+        daten = request.get_json()
+        projekte[projekt_id]["name"] = daten.get("name", projekte[projekt_id]["name"])
+        projekte[projekt_id]["beschreibung"] = daten.get("beschreibung", projekte[projekt_id]["beschreibung"])
+        save_json(projekte, PROJECTS_FILE)
+        return jsonify(projekte), 200
 
 @app.route("/api/zeiten", methods=["GET"])
 def get_zeiten():
