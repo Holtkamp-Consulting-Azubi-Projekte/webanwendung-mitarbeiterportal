@@ -1,170 +1,179 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function Mitarbeiter() {
-  const [benutzerdaten, setBenutzerdaten] = useState(null);
-  const [fehlerMeldung, setFehlerMeldung] = useState("");
-  const [bearbeiten, setBearbeiten] = useState(false);
-  const [aktualisiert, setAktualisiert] = useState(false);
-  const [formDaten, setFormDaten] = useState({
+const Mitarbeiter = () => {
+  const [daten, setDaten] = useState(null);
+  const [info, setInfo] = useState("");
+  const [fehler, setFehler] = useState("");
+  const [modalOffen, setModalOffen] = useState(false);
+  const [formulardaten, setFormulardaten] = useState({
     vorname: "",
     nachname: "",
     rolle: "",
     eintrittsdatum: "",
+    adresse: "",
+    telefon: ""
   });
 
-  useEffect(() => {
-    let email = localStorage.getItem("email");
+  const email = localStorage.getItem("email");
 
-    if (!email || email === "undefined" || email === "null") {
-      setFehlerMeldung("Kein Benutzer angemeldet oder ungültige E-Mail.");
+  useEffect(() => {
+    if (!email) {
+      setFehler("Kein Benutzer angemeldet oder ungültige E-Mail.");
       return;
     }
-
-    email = email.replaceAll('"', '');
 
     fetch(`http://localhost:5050/api/user/${email}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Benutzer konnte nicht geladen werden");
-        }
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        setBenutzerdaten(data);
-        setFormDaten(data);
+        setDaten(data);
+        setFormulardaten(data);
       })
-      .catch((err) => {
-        setFehlerMeldung(err.message);
-      });
-  }, []);
+      .catch(() =>
+        setFehler("Fehler beim Laden der Benutzerdaten.")
+      );
+  }, [email]);
 
   const handleChange = (e) => {
-    setFormDaten({
-      ...formDaten,
-      [e.target.name]: e.target.value,
-    });
+    setFormulardaten({ ...formulardaten, [e.target.name]: e.target.value });
   };
 
-  const handleSpeichern = () => {
-    const email = localStorage.getItem("email").replaceAll('"', '');
-
-    if (!formDaten.vorname || !formDaten.nachname || !formDaten.eintrittsdatum) {
-      setFehlerMeldung("Bitte alle Pflichtfelder ausfüllen.");
+  const speichern = async (e) => {
+    e.preventDefault();
+    if (!formulardaten.vorname || !formulardaten.nachname || !formulardaten.eintrittsdatum) {
+      setFehler("Bitte fülle alle Pflichtfelder aus.");
+      setTimeout(() => setFehler(""), 3000);
       return;
     }
 
-    fetch(`http://localhost:5050/api/user/${email}`, {
+    const res = await fetch(`http://localhost:5050/api/user/${email}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formDaten),
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Fehler beim Speichern ❌");
-        }
-        return res.json();
-      })
-      .then(() => {
-        setBenutzerdaten(formDaten);
-        setBearbeiten(false);
-        setAktualisiert(true);
-        setTimeout(() => setAktualisiert(false), 3000);
-      })
-      .catch((err) => setFehlerMeldung(err.message));
+      body: JSON.stringify(formulardaten)
+    });
+
+    if (res.ok) {
+      setInfo("Profil aktualisiert ✅");
+      setTimeout(() => setInfo(""), 3000);
+      setModalOffen(false);
+      setDaten(formulardaten);
+    } else {
+      setFehler("Aktualisierung fehlgeschlagen ❌");
+      setTimeout(() => setFehler(""), 3000);
+    }
   };
 
-  if (fehlerMeldung) {
-    return (
-      <div className="text-red-600 text-center mt-8">{fehlerMeldung}</div>
-    );
+  if (fehler) {
+    return <p className="text-red-600 text-center mt-10">{fehler}</p>;
   }
 
-  if (!benutzerdaten) {
-    return <div className="text-center mt-8">Lade Benutzerdaten...</div>;
+  if (!daten) {
+    return <p className="text-center mt-10">Lade Benutzerdaten...</p>;
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow rounded mt-6">
-      <h1 className="text-2xl font-bold mb-4 text-center">Mitarbeiterprofil</h1>
+    <div className="max-w-2xl mx-auto bg-white shadow-md p-6 mt-8 rounded">
+      <h2 className="text-2xl font-bold mb-4 text-center">Mitarbeiterprofil</h2>
 
-      {aktualisiert && (
-        <div className="bg-green-100 text-green-800 p-2 rounded mb-4 text-center border border-green-300">
-          Profil wurde erfolgreich aktualisiert ✅
+      {info && (
+        <div className="mb-4 px-4 py-2 bg-green-100 text-green-700 rounded text-sm text-center">
+          {info}
         </div>
       )}
 
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Vorname
-          </label>
-          <input
-            type="text"
-            name="vorname"
-            value={formDaten.vorname}
-            onChange={handleChange}
-            disabled={!bearbeiten}
-            className="w-full mt-1 px-3 py-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Nachname
-          </label>
-          <input
-            type="text"
-            name="nachname"
-            value={formDaten.nachname}
-            onChange={handleChange}
-            disabled={!bearbeiten}
-            className="w-full mt-1 px-3 py-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Rolle
-          </label>
-          <input
-            type="text"
-            name="rolle"
-            value={formDaten.rolle}
-            onChange={handleChange}
-            disabled={!bearbeiten}
-            className="w-full mt-1 px-3 py-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Eintrittsdatum
-          </label>
-          <input
-            type="date"
-            name="eintrittsdatum"
-            value={formDaten.eintrittsdatum}
-            onChange={handleChange}
-            disabled={!bearbeiten}
-            className="w-full mt-1 px-3 py-2 border rounded"
-          />
-        </div>
+      <div className="space-y-2 text-sm">
+        <p><strong>Vorname:</strong> {daten.vorname}</p>
+        <p><strong>Nachname:</strong> {daten.nachname}</p>
+        <p><strong>Rolle:</strong> {daten.rolle}</p>
+        <p><strong>Eintrittsdatum:</strong> {daten.eintrittsdatum}</p>
+        <p><strong>Adresse:</strong> {daten.adresse || "-"}</p>
+        <p><strong>Telefon:</strong> {daten.telefon || "-"}</p>
       </div>
 
       <div className="mt-6 text-center">
-        {!bearbeiten ? (
-          <button
-            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-            onClick={() => setBearbeiten(true)}
-          >
-            Bearbeiten
-          </button>
-        ) : (
-          <button
-            className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-            onClick={handleSpeichern}
-          >
-            Speichern
-          </button>
-        )}
+        <button
+          onClick={() => setModalOffen(true)}
+          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+        >
+          Bearbeiten
+        </button>
       </div>
+
+      {modalOffen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow w-full max-w-lg">
+            <h3 className="text-lg font-bold mb-4 text-purple-700">Profil bearbeiten</h3>
+            <form onSubmit={speichern} className="space-y-4">
+              <input
+                type="text"
+                name="vorname"
+                placeholder="Vorname"
+                value={formulardaten.vorname}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+                required
+              />
+              <input
+                type="text"
+                name="nachname"
+                placeholder="Nachname"
+                value={formulardaten.nachname}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+                required
+              />
+              <input
+                type="text"
+                name="rolle"
+                placeholder="Rolle"
+                value={formulardaten.rolle}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="date"
+                name="eintrittsdatum"
+                value={formulardaten.eintrittsdatum}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+                required
+              />
+              <input
+                type="text"
+                name="adresse"
+                placeholder="Adresse"
+                value={formulardaten.adresse}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="text"
+                name="telefon"
+                placeholder="Telefonnummer"
+                value={formulardaten.telefon}
+                onChange={handleChange}
+                className="w-full border p-2 rounded"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOffen(false)}
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  Speichern
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default Mitarbeiter;

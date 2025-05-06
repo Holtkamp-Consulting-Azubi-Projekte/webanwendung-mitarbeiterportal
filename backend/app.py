@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
 
-# 🔧 Dateipfade
+# 📁 Pfade
 BASE = os.path.abspath(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE, '..', 'data')
 USERS_FILE = os.path.join(DATA_DIR, 'users.json')
@@ -30,6 +30,7 @@ def save_json(daten, pfad):
     with open(pfad, "w", encoding="utf-8") as f:
         json.dump(daten, f, indent=2, ensure_ascii=False)
 
+# ✅ Registrierung
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -43,11 +44,14 @@ def register():
         "nachname": data.get("nachname", ""),
         "rolle": data.get("rolle", "user"),
         "eintrittsdatum": data.get("eintrittsdatum", ""),
+        "adresse": data.get("adresse", ""),
+        "telefon": data.get("telefon", ""),
         "passwort": hash_password(data.get("passwort", ""))
     }
     save_json(users, USERS_FILE)
     return jsonify({"message": "Registrierung erfolgreich"}), 201
 
+# ✅ Login
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -59,11 +63,13 @@ def login():
         return jsonify({"message": "Login erfolgreich"}), 200
     return jsonify({"error": "Login fehlgeschlagen"}), 401
 
+# ✅ Logout
 @app.route("/api/logout", methods=["POST"])
 def logout():
     save_json({}, SESSION_FILE)
     return jsonify({"message": "Logout erfolgreich"}), 200
 
+# ✅ Benutzerprofil abrufen/bearbeiten
 @app.route("/api/user/<email>", methods=["GET", "PUT"])
 def user(email):
     users = load_json(USERS_FILE)
@@ -79,11 +85,14 @@ def user(email):
             "vorname": daten.get("vorname", ""),
             "nachname": daten.get("nachname", ""),
             "rolle": daten.get("rolle", ""),
-            "eintrittsdatum": daten.get("eintrittsdatum", "")
+            "eintrittsdatum": daten.get("eintrittsdatum", ""),
+            "adresse": daten.get("adresse", ""),
+            "telefon": daten.get("telefon", "")
         })
         save_json(users, USERS_FILE)
         return jsonify({"message": "Profil aktualisiert"}), 200
 
+# ✅ Projekte verwalten
 @app.route("/api/projekte", methods=["GET", "POST"])
 def projekte():
     projekte = load_json(PROJECTS_FILE)
@@ -123,6 +132,7 @@ def projekt_bearbeiten_oder_loeschen(projekt_id):
         save_json(projekte, PROJECTS_FILE)
         return jsonify(projekte), 200
 
+# ✅ Zeiterfassung
 @app.route("/api/zeiten", methods=["GET"])
 def get_zeiten():
     return jsonify(load_json(TIMES_FILE)), 200
