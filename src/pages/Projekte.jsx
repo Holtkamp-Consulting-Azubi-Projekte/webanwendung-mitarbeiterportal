@@ -2,258 +2,243 @@ import { useEffect, useState } from "react";
 
 const Projekte = () => {
   const [projekte, setProjekte] = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [neuesProjekt, setNeuesProjekt] = useState({ name: "", beschreibung: "" });
-  const [bearbeitetesProjekt, setBearbeitetesProjekt] = useState({ id: "", name: "", beschreibung: "" });
-  const [fehlermeldung, setFehlermeldung] = useState("");
-  const [info, setInfo] = useState("");
-
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [projektToDelete, setProjektToDelete] = useState(null);
+  const [name, setName] = useState("");
+  const [beschreibung, setBeschreibung] = useState("");
+  const [nachricht, setNachricht] = useState("");
+  const [loeschKandidat, setLoeschKandidat] = useState(null);
+  const [abschlussKandidat, setAbschlussKandidat] = useState(null);
+  const [bearbeitenId, setBearbeitenId] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5050/api/projekte")
-      .then((res) => res.json())
-      .then((data) => setProjekte(data))
-      .catch((err) => {
-        console.error("Fehler beim Laden der Projekte:", err);
-        setFehlermeldung("Projekte konnten nicht geladen werden.");
-      });
+    ladeProjekte();
   }, []);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!neuesProjekt.name.trim()) {
-      setFehlermeldung("Projektname darf nicht leer sein.");
-      setTimeout(() => setFehlermeldung(""), 4000);
-      return;
-    }
-
-    const response = await fetch("http://localhost:5050/api/projekte", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(neuesProjekt),
-    });
-
-    if (response.ok) {
-      const neu = await response.json();
-      setProjekte((prev) => ({ ...prev, ...neu }));
-      setNeuesProjekt({ name: "", beschreibung: "" });
-      setShowModal(false);
-      setInfo("Projekt erfolgreich erstellt ✅");
-      setTimeout(() => setInfo(""), 3000);
-    } else {
-      setFehlermeldung("Erstellen fehlgeschlagen ❌");
-      setTimeout(() => setFehlermeldung(""), 4000);
-    }
-  };
-
-  const handleEditSave = async (e) => {
-    e.preventDefault();
-    const { id, name, beschreibung } = bearbeitetesProjekt;
-
-    const response = await fetch(`http://localhost:5050/api/projekte/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, beschreibung }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
+  const ladeProjekte = async () => {
+    try {
+      const res = await fetch("http://localhost:5050/api/projekte");
+      const data = await res.json();
       setProjekte(data);
-      setInfo("Projekt aktualisiert ✅");
-      setTimeout(() => setInfo(""), 3000);
-      setShowEditModal(false);
-    } else {
-      setFehlermeldung("Aktualisierung fehlgeschlagen ❌");
-      setTimeout(() => setFehlermeldung(""), 4000);
+    } catch (err) {
+      console.error("Fehler beim Laden:", err);
     }
   };
 
-  const handleDelete = async (id) => {
-    const response = await fetch(`http://localhost:5050/api/projekte/${id}`, {
-      method: "DELETE",
-    });
+  const projektSpeichern = async () => {
+    if (!name) return setNachricht("Bitte Projektnamen angeben");
 
-    const result = await response.json();
+    const payload = { name, beschreibung };
 
-    if (response.ok) {
-      const kopie = { ...projekte };
-      delete kopie[id];
-      setProjekte(kopie);
-      setInfo("Projekt gelöscht ✅");
-      setTimeout(() => setInfo(""), 3000);
-    } else {
-      setFehlermeldung(result.error || "Löschen fehlgeschlagen ❌");
-      setTimeout(() => setFehlermeldung(""), 4000);
+    try {
+      const res = await fetch(
+        `http://localhost:5050/api/projekte${bearbeitenId ? `/${bearbeitenId}` : ""}`,
+        {
+          method: bearbeitenId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (res.ok) {
+        setNachricht(bearbeitenId ? "Projekt aktualisiert ✅" : "Projekt gespeichert ✅");
+        setName("");
+        setBeschreibung("");
+        setBearbeitenId(null);
+        ladeProjekte();
+      } else {
+        setNachricht("Fehler beim Speichern ❌");
+      }
+    } catch {
+      setNachricht("Fehler beim Speichern ❌");
     }
 
-    setShowConfirmModal(false);
-    setProjektToDelete(null);
+    setTimeout(() => setNachricht(""), 3000);
   };
 
+  const projektBearbeiten = (id) => {
+    setBearbeitenId(id);
+    setName(projekte[id].name);
+    setBeschreibung(projekte[id].beschreibung);
+  };
+
+  const projektLöschen = async () => {
+    try {
+      const res = await fetch(`http://localhost:5050/api/projekte/${loeschKandidat}`, {
+        method: "DELETE",
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setNachricht("Projekt gelöscht ✅");
+        ladeProjekte();
+      } else {
+        setNachricht(result.error || "Fehler beim Löschen ❌");
+      }
+    } catch {
+      setNachricht("Fehler beim Löschen ❌");
+    }
+
+    setLoeschKandidat(null);
+    setTimeout(() => setNachricht(""), 3000);
+  };
+
+  const projektAbschließen = async () => {
+    try {
+      const res = await fetch(`http://localhost:5050/api/projekte/${abschlussKandidat}/abschliessen`, {
+        method: "PUT",
+      });
+
+      if (res.ok) {
+        setNachricht("Projekt abgeschlossen ✅");
+        ladeProjekte();
+      } else {
+        setNachricht("Fehler beim Abschließen ❌");
+      }
+    } catch {
+      setNachricht("Fehler beim Abschließen ❌");
+    }
+
+    setAbschlussKandidat(null);
+    setTimeout(() => setNachricht(""), 3000);
+  };
+
+  const statusBadge = (status) => {
+    switch (status) {
+      case "aktiv":
+        return (
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 border border-green-300">
+            aktiv
+          </span>
+        );
+      case "inaktiv":
+        return (
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300">
+            inaktiv
+          </span>
+        );
+      case "abgeschlossen":
+        return (
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-300">
+            abgeschlossen
+          </span>
+        );
+      default:
+        return (
+          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 border border-gray-300">
+            unbekannt
+          </span>
+        );
+    }
+  };
+    
   return (
-    <div className="max-w-3xl mx-auto mt-8 bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-bold mb-4 text-center">Projekte</h2>
+    <div className="max-w-2xl mx-auto mt-10 bg-white p-6 rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Projektverwaltung</h2>
 
-      {info && (
-        <div className="mb-4 px-4 py-2 bg-green-100 text-green-700 rounded text-sm">
-          {info}
-        </div>
-      )}
+      {/* Formular zum Anlegen/Bearbeiten */}
+      <input
+        type="text"
+        placeholder="Projektname"
+        className="w-full border px-3 py-2 rounded mb-2"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <textarea
+        placeholder="Beschreibung"
+        className="w-full border px-3 py-2 rounded mb-2"
+        value={beschreibung}
+        onChange={(e) => setBeschreibung(e.target.value)}
+      />
+      <button
+        onClick={projektSpeichern}
+        className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+      >
+        {bearbeitenId ? "Aktualisieren" : "Speichern"}
+      </button>
+      {nachricht && <p className="mt-2 text-sm text-blue-600">{nachricht}</p>}
 
-      {fehlermeldung && (
-        <div className="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded text-sm">
-          {fehlermeldung}
-        </div>
-      )}
+      <hr className="my-6" />
 
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-        >
-          Neues Projekt hinzufügen
-        </button>
+      {/* Projektliste */}
+      <h3 className="font-semibold mb-2">Bestehende Projekte</h3>
+      <div className="space-y-4">
+        {Object.entries(projekte).map(([id, projekt]) => (
+          <div key={id} className="border p-4 rounded shadow-sm bg-gray-50">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="font-semibold flex items-center"> 
+                  {projekt.name}
+                  {statusBadge(projekt.status)}
+                </h4>
+                <p className="text-sm text-gray-600">{projekt.beschreibung}</p>
+              </div>
+
+              {/* Aktionen (nur wenn nicht abgeschlossen) */}
+              {projekt.status !== "abgeschlossen" && (
+                <div className="flex flex-col items-end space-y-2">
+                  <button
+                    onClick={() => projektBearbeiten(id)}
+                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    onClick={() => setLoeschKandidat(id)}
+                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                  >
+                    Löschen
+                  </button>
+                  <button
+                    onClick={() => setAbschlussKandidat(id)}
+                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                  >
+                    Abschließen
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <ul className="space-y-4">
-        {Object.entries(projekte).map(([id, projekt]) => (
-          <li key={id} className="border rounded p-4 bg-gray-50">
-            <h3 className="font-bold text-lg">{projekt.name}</h3>
-            <p className="text-sm text-gray-600">{projekt.beschreibung}</p>
-            <div className="mt-2 flex gap-2">
+      {/* Modal: Löschen */}
+      {loeschKandidat && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md text-center">
+            <p>Möchtest du dieses Projekt wirklich löschen?</p>
+            <div className="mt-4 space-x-2">
               <button
-                onClick={() => {
-                  setBearbeitetesProjekt({ id, name: projekt.name, beschreibung: projekt.beschreibung });
-                  setShowEditModal(true);
-                }}
-                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                onClick={projektLöschen}
+                className="px-3 py-2 rounded bg-red-600 text-white"
               >
-                Bearbeiten
+                Ja, löschen
               </button>
               <button
-                onClick={() => {
-                  setProjektToDelete(id);
-                  setShowConfirmModal(true);
-                }}
-                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-              >
-                Löschen
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {/* Neues Projekt Modal */}
-      {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded shadow w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 text-purple-700">Neues Projekt</h3>
-            <form className="space-y-4" onSubmit={handleCreate}>
-              <input
-                type="text"
-                name="name"
-                placeholder="Projektname"
-                value={neuesProjekt.name}
-                onChange={(e) =>
-                  setNeuesProjekt({ ...neuesProjekt, name: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-              <textarea
-                name="beschreibung"
-                placeholder="Beschreibung"
-                value={neuesProjekt.beschreibung}
-                onChange={(e) =>
-                  setNeuesProjekt({ ...neuesProjekt, beschreibung: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                >
-                  Erstellen
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Bearbeiten-Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded shadow w-full max-w-md">
-            <h3 className="text-lg font-bold mb-4 text-purple-700">Projekt bearbeiten</h3>
-            <form className="space-y-4" onSubmit={handleEditSave}>
-              <input
-                type="text"
-                value={bearbeitetesProjekt.name}
-                onChange={(e) =>
-                  setBearbeitetesProjekt({ ...bearbeitetesProjekt, name: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-              <textarea
-                value={bearbeitetesProjekt.beschreibung}
-                onChange={(e) =>
-                  setBearbeitetesProjekt({ ...bearbeitetesProjekt, beschreibung: e.target.value })
-                }
-                className="w-full border p-2 rounded"
-              />
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(false)}
-                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                >
-                  Speichern
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Bestätigungsmodal für Löschen */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded shadow w-full max-w-md text-center">
-            <h3 className="text-lg font-bold mb-4 text-red-700">Projekt löschen</h3>
-            <p className="mb-6">Möchtest du dieses Projekt wirklich löschen?</p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setShowConfirmModal(false);
-                  setProjektToDelete(null);
-                }}
-                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                onClick={() => setLoeschKandidat(null)}
+                className="px-3 py-2 rounded border"
               >
                 Abbrechen
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Abschließen */}
+      {abschlussKandidat && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md text-center">
+            <p>Projekt wirklich abschließen? Danach ist keine Bearbeitung mehr möglich.</p>
+            <div className="mt-4 space-x-2">
               <button
-                onClick={() => handleDelete(projektToDelete)}
-                className="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700 transition duration-200"
+                onClick={projektAbschließen}
+                className="px-3 py-2 rounded bg-yellow-600 text-white"
               >
-                Löschen bestätigen
+                Ja, abschließen
+              </button>
+              <button
+                onClick={() => setAbschlussKandidat(null)}
+                className="px-3 py-2 rounded border"
+              >
+                Abbrechen
               </button>
             </div>
           </div>

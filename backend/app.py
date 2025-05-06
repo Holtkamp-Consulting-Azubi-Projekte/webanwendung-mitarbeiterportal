@@ -16,9 +16,11 @@ PROJECTS_FILE = os.path.join(DATA_DIR, 'projects.json')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
+# 🔐 Passwort-Hashing
 def hash_password(passwort: str) -> str:
     return hashlib.sha256(passwort.encode("utf-8")).hexdigest()
 
+# 🔄 JSON-Handling
 def load_json(pfad):
     if not os.path.exists(pfad):
         with open(pfad, "w", encoding="utf-8") as f:
@@ -96,41 +98,58 @@ def user(email):
 @app.route("/api/projekte", methods=["GET", "POST"])
 def projekte():
     projekte = load_json(PROJECTS_FILE)
+    zeiten = load_json(TIMES_FILE)
+
     if request.method == "GET":
+        # Status dynamisch prüfen
+        for pid, projekt in projekte.items():
+            if projekt.get("status") == "abgeschlossen":
+                continue  # Nicht anfassen
+
+            name = projekt.get("name")
+            offen = any(
+                z.get("projekt") == name and z.get("end") is None
+                for z in zeiten.values()
+            )
+            projekte[pid]["status"] = "aktiv" if offen else "inaktiv"
+
         return jsonify(projekte), 200
 
     if request.method == "POST":
         data = request.get_json()
         id = datetime.now().isoformat()
+        data["status"] = "inaktiv"
         projekte[id] = data
         save_json(projekte, PROJECTS_FILE)
         return jsonify({id: data}), 201
 
-@app.route("/api/projekte/<projekt_id>", methods=["DELETE", "PUT"])
-def projekt_bearbeiten_oder_loeschen(projekt_id):
+# ✅ Projekte bearbeiten/löschen
+@app.route("/api/projekte/<projekt_id>", methods=["PUT", "DELETE"])
+def projekt_aktualisieren_oder_loeschen(projekt_id):
     projekte = load_json(PROJECTS_FILE)
+    zeiten = load_json(TIMES_FILE)
 
     if projekt_id not in projekte:
         return jsonify({"error": "Projekt nicht gefunden"}), 404
 
-    if request.method == "DELETE":
-        zeiten = load_json(TIMES_FILE)
-        projektname = projekte[projekt_id]["name"]
+    if request.method == "PUT":
+        daten = request.get_json()
+        projekte[projekt_id].update(daten)
+        save_json(projekte, PROJECTS_FILE)
+        return jsonify({projekt_id: projekte[projekt_id]}), 200
 
-        for z in zeiten.values():
-            if z["projekt"] == projektname and z["end"] is None:
-                return jsonify({"error": "Projekt ist aktiv und kann nicht gelöscht werden."}), 400
+    if request.method == "DELETE":
+        projektname = projekte[projekt_id]["name"]
+        aktive_zeiten = [
+            z for z in zeiten.values()
+            if z["projekt"] == projektname and z["end"] is None
+        ]
+        if aktive_zeiten:
+            return jsonify({"error": "Projekt ist aktiv und kann nicht gelöscht werden."}), 400
 
         del projekte[projekt_id]
         save_json(projekte, PROJECTS_FILE)
         return jsonify({"message": "Projekt gelöscht"}), 200
-
-    if request.method == "PUT":
-        daten = request.get_json()
-        projekte[projekt_id]["name"] = daten.get("name", projekte[projekt_id]["name"])
-        projekte[projekt_id]["beschreibung"] = daten.get("beschreibung", projekte[projekt_id]["beschreibung"])
-        save_json(projekte, PROJECTS_FILE)
-        return jsonify(projekte), 200
 
 # ✅ Zeiterfassung
 @app.route("/api/zeiten", methods=["GET"])
@@ -141,14 +160,26 @@ def get_zeiten():
 def start_zeit():
     data = request.get_json()
     zeiten = load_json(TIMES_FILE)
+    projekte = load_json(PROJECTS_FILE)
+
     start = data.get("start")
+    projekt_name = data.get("projekt")
+
     zeiten[start] = {
         "email": data.get("email"),
         "start": start,
         "end": None,
-        "projekt": data.get("projekt", "")
+        "projekt": projekt_name
     }
     save_json(zeiten, TIMES_FILE)
+
+    # Projektstatus auf "aktiv" setzen (wenn bisher "inaktiv")
+    for pid, p in projekte.items():
+        if p["name"] == projekt_name and p.get("status") == "inaktiv":
+            projekte[pid]["status"] = "aktiv"
+            save_json(projekte, PROJECTS_FILE)
+            break
+
     return jsonify({"message": "Startzeit erfasst"}), 201
 
 @app.route("/api/zeiten/stop", methods=["POST"])
@@ -167,5 +198,6 @@ def stop_zeit():
     save_json(zeiten, TIMES_FILE)
     return jsonify(zeiten[key]), 200
 
+# ✅ Server starten
 if __name__ == "__main__":
     app.run(debug=True, port=5050)
