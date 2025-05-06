@@ -1,244 +1,233 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const Projekte = () => {
   const [projekte, setProjekte] = useState({});
-  const [name, setName] = useState("");
-  const [beschreibung, setBeschreibung] = useState("");
-  const [nachricht, setNachricht] = useState("");
-  const [loeschKandidat, setLoeschKandidat] = useState(null);
-  const [abschlussKandidat, setAbschlussKandidat] = useState(null);
-  const [bearbeitenId, setBearbeitenId] = useState(null);
+  const [modalOffen, setModalOffen] = useState(false);
+  const [modus, setModus] = useState("neu");
+  const [formular, setFormular] = useState({ name: "", beschreibung: "" });
+  const [aktiveID, setAktiveID] = useState(null);
+  const [meldung, setMeldung] = useState("");
+  const [warnung, setWarnung] = useState("");
+  const [bestätigeAktion, setBestätigeAktion] = useState(null);
+
+  // Projekte vom Server laden
+  const ladeProjekte = async () => {
+    const res = await fetch("http://localhost:5050/api/projekte");
+    const daten = await res.json();
+    setProjekte(daten);
+  };
 
   useEffect(() => {
     ladeProjekte();
   }, []);
 
-  const ladeProjekte = async () => {
-    try {
-      const res = await fetch("http://localhost:5050/api/projekte");
-      const data = await res.json();
-      setProjekte(data);
-    } catch (err) {
-      console.error("Fehler beim Laden:", err);
+  const öffneModal = (id = null) => {
+    setWarnung("");
+    if (id) {
+      setModus("bearbeiten");
+      setAktiveID(id);
+      setFormular({ ...projekte[id] });
+    } else {
+      setModus("neu");
+      setAktiveID(null);
+      setFormular({ name: "", beschreibung: "" });
+    }
+    setModalOffen(true);
+  };
+
+  const schließeModal = () => {
+    setModalOffen(false);
+    setAktiveID(null);
+    setFormular({ name: "", beschreibung: "" });
+  };
+
+  const handleSpeichern = async () => {
+    const url =
+      modus === "neu"
+        ? "http://localhost:5050/api/projekte"
+        : `http://localhost:5050/api/projekte/${aktiveID}`;
+    const method = modus === "neu" ? "POST" : "PUT";
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formular),
+    });
+
+    if (res.ok) {
+      await ladeProjekte();
+      setMeldung(modus === "neu" ? "Projekt erstellt ✅" : "Projekt aktualisiert ✅");
+      schließeModal();
+      setTimeout(() => setMeldung(""), 3000);
+    } else {
+      setWarnung("Fehler beim Speichern ❌");
     }
   };
 
-  const projektSpeichern = async () => {
-    if (!name) return setNachricht("Bitte Projektnamen angeben");
-
-    const payload = { name, beschreibung };
-
-    try {
-      const res = await fetch(
-        `http://localhost:5050/api/projekte${bearbeitenId ? `/${bearbeitenId}` : ""}`,
-        {
-          method: bearbeitenId ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (res.ok) {
-        setNachricht(bearbeitenId ? "Projekt aktualisiert ✅" : "Projekt gespeichert ✅");
-        setName("");
-        setBeschreibung("");
-        setBearbeitenId(null);
-        ladeProjekte();
-      } else {
-        setNachricht("Fehler beim Speichern ❌");
-      }
-    } catch {
-      setNachricht("Fehler beim Speichern ❌");
-    }
-
-    setTimeout(() => setNachricht(""), 3000);
-  };
-
-  const projektBearbeiten = (id) => {
-    setBearbeitenId(id);
-    setName(projekte[id].name);
-    setBeschreibung(projekte[id].beschreibung);
-  };
-
-  const projektLöschen = async () => {
-    try {
-      const res = await fetch(`http://localhost:5050/api/projekte/${loeschKandidat}`, {
+  const handleLöschen = (id) => {
+    setBestätigeAktion(() => async () => {
+      const res = await fetch(`http://localhost:5050/api/projekte/${id}`, {
         method: "DELETE",
       });
-      const result = await res.json();
-      if (res.ok) {
-        setNachricht("Projekt gelöscht ✅");
-        ladeProjekte();
-      } else {
-        setNachricht(result.error || "Fehler beim Löschen ❌");
-      }
-    } catch {
-      setNachricht("Fehler beim Löschen ❌");
-    }
+      const daten = await res.json();
 
-    setLoeschKandidat(null);
-    setTimeout(() => setNachricht(""), 3000);
+      if (res.ok) {
+        await ladeProjekte();
+        setMeldung("Projekt gelöscht ✅");
+      } else {
+        setWarnung(daten.error || "Fehler beim Löschen ❌");
+      }
+
+      setTimeout(() => {
+        setMeldung("");
+        setWarnung("");
+      }, 3000);
+      setBestätigeAktion(null);
+    });
   };
 
-  const projektAbschließen = async () => {
-    try {
-      const res = await fetch(`http://localhost:5050/api/projekte/${abschlussKandidat}/abschliessen`, {
+  const handleAbschließen = (id) => {
+    setBestätigeAktion(() => async () => {
+      const res = await fetch(`http://localhost:5050/api/projekte/${id}`, {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "abgeschlossen" }),
       });
 
       if (res.ok) {
-        setNachricht("Projekt abgeschlossen ✅");
-        ladeProjekte();
-      } else {
-        setNachricht("Fehler beim Abschließen ❌");
+        await ladeProjekte();
+        setMeldung("Projekt abgeschlossen ✅");
+        setTimeout(() => setMeldung(""), 3000);
       }
-    } catch {
-      setNachricht("Fehler beim Abschließen ❌");
-    }
 
-    setAbschlussKandidat(null);
-    setTimeout(() => setNachricht(""), 3000);
+      setBestätigeAktion(null);
+    });
   };
 
-  const statusBadge = (status) => {
-    switch (status) {
-      case "aktiv":
-        return (
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800 border border-green-300">
-            aktiv
-          </span>
-        );
-      case "inaktiv":
-        return (
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 border border-yellow-300">
-            inaktiv
-          </span>
-        );
-      case "abgeschlossen":
-        return (
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 border border-red-300">
-            abgeschlossen
-          </span>
-        );
-      default:
-        return (
-          <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-600 border border-gray-300">
-            unbekannt
-          </span>
-        );
-    }
-  };
-    
   return (
-    <div className="max-w-2xl mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold mb-4">Projektverwaltung</h2>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Projekte</h1>
 
-      {/* Formular zum Anlegen/Bearbeiten */}
-      <input
-        type="text"
-        placeholder="Projektname"
-        className="w-full border px-3 py-2 rounded mb-2"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <textarea
-        placeholder="Beschreibung"
-        className="w-full border px-3 py-2 rounded mb-2"
-        value={beschreibung}
-        onChange={(e) => setBeschreibung(e.target.value)}
-      />
+      {meldung && <div className="text-green-600 mb-2">{meldung}</div>}
+      {warnung && <div className="text-red-600 mb-2">{warnung}</div>}
+
       <button
-        onClick={projektSpeichern}
-        className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+        onClick={() => öffneModal()}
+        className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700 mb-4"
       >
-        {bearbeitenId ? "Aktualisieren" : "Speichern"}
+        ➕ Neues Projekt
       </button>
-      {nachricht && <p className="mt-2 text-sm text-blue-600">{nachricht}</p>}
 
-      <hr className="my-6" />
-
-      {/* Projektliste */}
-      <h3 className="font-semibold mb-2">Bestehende Projekte</h3>
-      <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {Object.entries(projekte).map(([id, projekt]) => (
-          <div key={id} className="border p-4 rounded shadow-sm bg-gray-50">
-            <div className="flex justify-between items-center">
-              <div>
-                <h4 className="font-semibold flex items-center"> 
-                  {projekt.name}
-                  {statusBadge(projekt.status)}
-                </h4>
-                <p className="text-sm text-gray-600">{projekt.beschreibung}</p>
-              </div>
-
-              {/* Aktionen (nur wenn nicht abgeschlossen) */}
-              {projekt.status !== "abgeschlossen" && (
-                <div className="flex flex-col items-end space-y-2">
-                  <button
-                    onClick={() => projektBearbeiten(id)}
-                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                  >
-                    Bearbeiten
-                  </button>
-                  <button
-                    onClick={() => setLoeschKandidat(id)}
-                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                  >
-                    Löschen
-                  </button>
-                  <button
-                    onClick={() => setAbschlussKandidat(id)}
-                    className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
-                  >
-                    Abschließen
-                  </button>
-                </div>
-              )}
+          <div
+            key={id}
+            className="border rounded p-4 shadow-sm bg-white flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">{projekt.name}</h2>
+              <span
+                className={`text-xs px-2 py-1 rounded-full ${
+                  projekt.status === "aktiv"
+                    ? "bg-green-200 text-green-800"
+                    : projekt.status === "abgeschlossen"
+                    ? "bg-red-200 text-red-800"
+                    : "bg-yellow-200 text-yellow-800"
+                }`}
+              >
+                {projekt.status}
+              </span>
             </div>
+            <p className="text-sm text-gray-600 mt-2">{projekt.beschreibung}</p>
+
+            {projekt.status !== "abgeschlossen" && (
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => öffneModal(id)}
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  ✏️ Bearbeiten
+                </button>
+                <button
+                  onClick={() => handleLöschen(id)}
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  🗑 Löschen
+                </button>
+                <button
+                  onClick={() => handleAbschließen(id)}
+                  className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+                >
+                  ✅ Abschließen
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Modal: Löschen */}
-      {loeschKandidat && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md text-center">
-            <p>Möchtest du dieses Projekt wirklich löschen?</p>
-            <div className="mt-4 space-x-2">
+      {/* Modal */}
+      {modalOffen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded p-6 shadow-md w-full max-w-md max-h-[70vh] overflow-auto">
+            <h2 className="text-xl font-bold mb-4">
+              {modus === "neu" ? "Neues Projekt" : "Projekt bearbeiten"}
+            </h2>
+
+            <label className="block mb-2 text-sm font-medium">Name</label>
+            <input
+              type="text"
+              value={formular.name}
+              onChange={(e) =>
+                setFormular({ ...formular, name: e.target.value })
+              }
+              className="w-full border rounded px-3 py-2 mb-4"
+            />
+
+            <label className="block mb-2 text-sm font-medium">Beschreibung</label>
+            <textarea
+              value={formular.beschreibung}
+              onChange={(e) =>
+                setFormular({ ...formular, beschreibung: e.target.value })
+              }
+              className="w-full border rounded px-3 py-2 mb-4"
+            />
+
+            <div className="flex justify-end gap-2 mt-4">
               <button
-                onClick={projektLöschen}
-                className="px-3 py-2 rounded bg-red-600 text-white"
-              >
-                Ja, löschen
-              </button>
-              <button
-                onClick={() => setLoeschKandidat(null)}
-                className="px-3 py-2 rounded border"
+                onClick={schließeModal}
+                className="px-3 py-2 rounded border text-gray-700 hover:bg-gray-200 transition duration-200"
               >
                 Abbrechen
+              </button>
+              <button
+                onClick={handleSpeichern}
+                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+              >
+                Speichern
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Abschließen */}
-      {abschlussKandidat && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-md text-center">
-            <p>Projekt wirklich abschließen? Danach ist keine Bearbeitung mehr möglich.</p>
-            <div className="mt-4 space-x-2">
+      {/* Bestätigung */}
+      {bestätigeAktion && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md text-center max-w-sm">
+            <p className="mb-4">Bist du dir sicher?</p>
+            <div className="flex justify-center gap-4">
               <button
-                onClick={projektAbschließen}
-                className="px-3 py-2 rounded bg-yellow-600 text-white"
-              >
-                Ja, abschließen
-              </button>
-              <button
-                onClick={() => setAbschlussKandidat(null)}
-                className="px-3 py-2 rounded border"
+                onClick={() => setBestätigeAktion(null)}
+                className="px-3 py-2 rounded border text-gray-700 hover:bg-gray-200 transition duration-200"
               >
                 Abbrechen
+              </button>
+              <button
+                onClick={bestätigeAktion}
+                className="px-3 py-2 rounded hover:bg-purple-800 hover:text-gray-100 transition duration-200 border text-gray-700"
+              >
+                Ja, bestätigen
               </button>
             </div>
           </div>

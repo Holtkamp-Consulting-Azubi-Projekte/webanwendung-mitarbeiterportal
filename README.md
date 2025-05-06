@@ -12,8 +12,21 @@ Dies ist eine moderne Webanwendung zur Verwaltung von Mitarbeitenden, Arbeitszei
 - ✅ Logout-Funktion mit Session-Handling
 - ✅ Login- und Registerseiten mit integriertem Firmenlogo
 - ✅ Responsives Frontend mit Tailwind CSS
-- ✅ Backend-API in Flask (Python)
-- ✅ JSON-Dateien für einfache Datenhaltung (users, session, logs)
+- ✅ Dashboard mit Begrüßung und Auswertungen
+- ✅ Mitarbeiterseite mit Profilbearbeitung, Modal und Validierung
+- ✅ Projektseite mit:
+  - Bearbeitung und Löschung per Modal
+  - Bestätigungsdialoge
+  - Statusanzeige (aktiv / inaktiv / abgeschlossen)
+  - Schutz vor Löschung laufender Projekte
+- ✅ Zeiterfassungsseite mit:
+  - Ein- & Ausstempeln
+  - Dropdown-Auswahl (nur aktive Projekte)
+  - Filter (alle, offen, abgeschlossen)
+  - Tages- & Wochenübersicht
+  - Schutz vor Buchung auf abgeschlossene Projekte
+- ✅ Einstellungsseite vorbereitet
+- ✅ Alle Daten werden in JSON-Dateien als Dictionary gespeichert
 
 ---
 
@@ -38,8 +51,8 @@ Dies ist eine moderne Webanwendung zur Verwaltung von Mitarbeitenden, Arbeitszei
   🔗 [Gunicorn Dokumentation](https://docs.gunicorn.org/en/stable/)
 
 ### Datenhaltung
-- **JSON-Dateien** – Temporäre Speicherung der Benutzer-, Sitzungs- und Logdaten als Dictionaries
-- **PostgreSQL** – Für die produktive Datenbankanbindung vorbereitet  
+- **JSON-Dateien** – Speicherung der Benutzer-, Sitzungs-, Projekt- und Zeitdaten als Dictionaries
+- **PostgreSQL** – Für die spätere produktive Anbindung vorbereitet  
   🔗 [PostgreSQL Dokumentation](https://www.postgresql.org/docs/)
 - **DBVisualizer** – GUI zur Datenbankinspektion  
   🔗 [DBVisualizer Guide](https://www.dbvis.com/docs/)
@@ -63,16 +76,23 @@ webanwendung-mitarbeiterportal/
 │   ├── data/
 │   │   ├── users.json
 │   │   ├── session.json
+│   │   ├── projects.json
+│   │   ├── times.json
 │   │   └── logs.json
 │   └── ...
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   └── Header.jsx
+│   │   │   ├── Header.jsx
+│   │   │   └── Footer.jsx
 │   │   ├── pages/
 │   │   │   ├── Login.jsx
 │   │   │   ├── Register.jsx
 │   │   │   ├── Dashboard.jsx
+│   │   │   ├── Mitarbeiter.jsx
+│   │   │   ├── Projekte.jsx
+│   │   │   ├── Zeiterfassung.jsx
+│   │   │   ├── Einstellungen.jsx
 │   │   │   └── Logout.jsx
 │   │   ├── App.jsx
 │   │   └── assets/
