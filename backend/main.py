@@ -1,8 +1,8 @@
 from flask import Flask
-from app.routes.auth import auth_bp
-from app.routes.user import user_bp
-from app.routes.project import project_bp
-from app.routes.time import time_bp
+from routes.auth import auth_bp
+from routes.user import user_bp
+from routes.project import project_bp
+from routes.time import time_bp
 
 app = Flask(__name__)
 
