@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
-from app.utils.helpers import save_json
-from app.config import SESSION_FILE
+from utils.helpers import save_json
+from config import SESSION_FILE
 
 auth_bp = Blueprint("auth", __name__)
 
