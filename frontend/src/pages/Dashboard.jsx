@@ -29,7 +29,7 @@ export default function Dashboard() {
       });
 
     // Zeiteinträge holen
-    fetch("http://localhost:5050/api/zeiten")
+    fetch("http://localhost:5050/api/time/")
       .then((res) => res.json())
       .then((data) => {
         const userZeiten = Object.values(data).filter((z) => z.email === email);
@@ -78,46 +78,6 @@ export default function Dashboard() {
     };
   }
 
-  function aggregiereWochentage(eintraege) {
-    const wochentage = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-    const daten = wochentage.map((tag) => ({ tag, minuten: 0 }));
-
-    eintraege.forEach((e) => {
-      if (!e.end) return;
-      const start = new Date(e.start);
-      const end = new Date(e.end);
-      const tagIndex = (start.getDay() + 6) % 7; // Montag = 0
-      const dauer = berechneDauer(start, end);
-      daten[tagIndex].minuten += dauer;
-    });
-
-    return daten.map((d) => ({ ...d, stunden: +(d.minuten / 60).toFixed(2) }));
-  }
-
-  function aggregiereProjekte(eintraege) {
-    const projektDaten = {};
-    const heute = new Date();
-    const wochenstart = new Date(heute);
-    wochenstart.setDate(heute.getDate() - heute.getDay() + 1);
-
-    eintraege.forEach((e) => {
-      if (!e.end) return;
-
-      const start = new Date(e.start);
-      const end = new Date(e.end);
-      if (start < wochenstart) return;
-
-      const dauer = (end - start) / 60000;
-      const projekt = e.projekt || "Unbekannt";
-      projektDaten[projekt] = (projektDaten[projekt] || 0) + dauer;
-    });
-
-    return Object.entries(projektDaten).map(([projekt, minuten]) => ({
-      name: projekt,
-      value: +(minuten / 60).toFixed(2),
-    }));
-  }
-
   const farben = ["#6b21a8", "#9333ea", "#c084fc", "#d946ef", "#a855f7", "#7e22ce"];
   const { heute, woche } = berechneUebersicht(zeiten);
 
@@ -136,43 +96,6 @@ export default function Dashboard() {
           <p className="text-sm text-gray-500">Arbeitszeit diese Woche</p>
           <p className="text-xl font-semibold">{woche}</p>
         </div>
-      </div>
-
-      <div className="bg-gray-100 border p-4 rounded text-sm mb-6">
-        <p className="font-semibold text-center mb-2">Arbeitszeit nach Wochentag</p>
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={aggregiereWochentage(zeiten)}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="tag" />
-            <YAxis unit="h" />
-            <Tooltip formatter={(value) => `${value} Stunden`} />
-            <Bar dataKey="stunden" fill="#6b21a8" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <div className="bg-gray-100 border p-4 rounded text-sm">
-        <p className="font-semibold text-center mb-2">Projektverteilung (diese Woche)</p>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={aggregiereProjekte(zeiten)}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={90}
-              label={({ name, percent }) =>
-                `${name} (${(percent * 100).toFixed(0)}%)`
-              }
-            >
-              {aggregiereProjekte(zeiten).map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={farben[index % farben.length]} />
-              ))}
-            </Pie>
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
