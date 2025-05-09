@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Header from "./components/Header";
 import Dashboard from "./pages/Dashboard";
 import Mitarbeiter from "./pages/Mitarbeiter";
@@ -11,9 +11,8 @@ import Logout from "./pages/Logout";
 
 function App() {
   return (
-    <>
+    <Router>
       <Header />
-
       <main className="pt-24 pb-20 min-h-screen">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -24,14 +23,14 @@ function App() {
           <Route path="/projekte" element={<Projekte />} />
           <Route path="/zeiten" element={<Zeiterfassung />} />
           <Route path="/einstellungen" element={<Einstellungen />} />
-
+          {/* Fallback-Route für alle nicht gefundenen Seiten */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
-
       <footer className="fixed bottom-0 left-0 w-full z-50 bg-gray-100 text-center text-sm text-gray-600 py-4 border-t">
         © 2025 Holtkamp-Consulting GmbH – Mitarbeiterportal
       </footer>
-    </>
+    </Router>
   );
 }
 
