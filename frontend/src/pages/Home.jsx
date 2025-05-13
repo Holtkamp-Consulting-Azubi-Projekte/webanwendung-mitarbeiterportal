@@ -20,4 +20,11 @@ function Home() {
   )
 }
 
-export default Home
+export default function Home() {
+  return (
+    <div className="text-gray-800">
+      <h1 className="text-2xl font-bold mb-4">Willkommen im Mitarbeiterportal</h1>
+      <p>Hier findest du alle Funktionen rund um Projekte, Zeiterfassung und Auswertungen.</p>
+    </div>
+  );
+}
