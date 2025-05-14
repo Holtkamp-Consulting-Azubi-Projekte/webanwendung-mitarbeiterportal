@@ -1,0 +1,47 @@
+# Node.js (Vite)
+node_modules/
+dist/
+.vite/
+
+# Python (Flask Backend)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env.*
+venv/
+env/
+
+# VS Code / System-Dateien
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs / temporäre Dateien
+*.log
+
+# OS-spezifisch
+.idea/
+*.swp
+
+# Docker-Umgebung (optional)
+*.pid
+*.sock
+docker-data/
+docker-compose.override.yml
+
+# Projektstruktur
+/frontend/.env
+/frontend/node_modules
+/backend/.env
+/backend/data/session.json
+/backend/data/logs.json
+/backend/data/*.sqlite3
+
+# Sonstige generierte Dateien
+*.sqlite3
+*.db
+*.bak
+*.zip
+*.tar.gz

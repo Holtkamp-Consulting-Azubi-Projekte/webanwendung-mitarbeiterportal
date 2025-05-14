@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* globale Schriftart setzen */
+body {
+    @apply font-sans;
+  }
