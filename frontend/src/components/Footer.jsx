@@ -1,12 +1,7 @@
-import Header from "./Header";
-import Footer from "./Footer";
-
-export default function Layout({ children }) {
+export default function Footer() {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow max-w-7xl mx-auto w-full p-4">{children}</main>
-      <Footer />
-    </div>
+    <footer className="bg-secondary border-t mt-8 text-center text-sm text-base text-gray-600 py-4">
+      © {new Date().getFullYear()} Holtkamp Consulting – Mitarbeiterportal
+    </footer>
   );
 }

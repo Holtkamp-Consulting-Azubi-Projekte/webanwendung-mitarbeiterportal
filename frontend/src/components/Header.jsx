@@ -1,22 +1,63 @@
-import logo from "@/assets/logo.png";
+import { NavLink } from "react-router-dom";
+import logo from "../assets/logo.png";
+import Button from "./Button";
 
 export default function Header() {
   return (
-    <header className="bg-white shadow border-b border-purple-200">
-      <div className="max-w-7xl mx-auto flex items-center justify-between p-4">
+    <header className="fixed top-0 w-full z-50 bg-secondary shadow border-b-2 border-primary">
+      <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-4">
+
+        {/* Logo */}
         <div className="flex items-center gap-2">
-          <img src={logo} alt="Logo" className="h-10" />
-          <span className="font-bold text-xl text-purple-700">Holtkamp Consulting</span>
+          <img src={logo} alt="Logo" className="h-16 w-auto" />
         </div>
-        <nav className="hidden md:flex gap-6 text-sm text-gray-800">
-          <a href="#" className="hover:text-purple-700">Data & Analytics</a>
-          <a href="#" className="hover:text-purple-700">SAP-Basis</a>
-          <a href="#" className="hover:text-purple-700">Business Intelligence</a>
-          <a href="#" className="hover:text-purple-700">Karriere</a>
+
+        {/* Navigation */}
+        <nav className="hidden md:flex gap-10 text-sm text-base font-medium tracking-wide">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              isActive ? "text-primary font-bold" : "hover:text-primary"
+            }
+          >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/projekte"
+            className={({ isActive }) =>
+              isActive ? "text-primary font-bold" : "hover:text-primary"
+            }
+          >
+            Projekte
+          </NavLink>
+          <NavLink
+            to="/zeitmatrix"
+            className={({ isActive }) =>
+              isActive ? "text-primary font-bold" : "hover:text-primary"
+            }
+          >
+            Zeitmatrix
+          </NavLink>
+          <NavLink
+            to="/profil"
+            className={({ isActive }) =>
+              isActive ? "text-primary font-bold" : "hover:text-primary"
+            }
+          >
+            Profil
+          </NavLink>
+          <NavLink
+            to="/einstellungen"
+            className={({ isActive }) =>
+              isActive ? "text-primary font-bold" : "hover:text-primary"
+            }
+          >
+            Einstellungen
+          </NavLink>
         </nav>
-        <button className="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-800 text-sm">
-          Jetzt Kontaktieren
-        </button>
+
+        {/* CTA-Button */}
+        <Button>Logout</Button>
       </div>
     </header>
   );
