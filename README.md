@@ -1,121 +1,98 @@
-# Backend
+# 🧑‍💼 Webanwendung Mitarbeiterportal
 
-# 🔧 Backend – Flask API
+## 🔥 Kurzbeschreibung
 
-## Technologiestack
-
-- Python 3
-- Flask
-- flask-cors
-- JSON-Dateien zur Datenspeicherung (kein DB-Anschluss bisher)
-
-## API-Endpunkte (bisher)
-
-| Methode | Endpoint             | Beschreibung              |
-|---------|----------------------|---------------------------|
-| GET     | `/api/ping`         | Test-Endpunkt             |
-
-## Struktur
-
-- `app.py` – Flask-App mit CORS & Routing
-- `data/users.json` – Benutzer
-- `data/session.json` – Sessions
-- `data/logs.json` – Logdaten
-
-## ToDo
-
-- Login/Registrierung
-- User-Verwaltung
-- Zeiterfassung
-- Projekt-CRUD
-
+Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projektverwaltung und einem wöchentlichen PDF-Export. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und läuft auf einem Raspberry Pi 5 mit PostgreSQL-Datenbank.
 
 ---
 
-# Frontend
+## 🚀 Technologiestack
 
-# 🎨 Frontend – React + Tailwind
+### 🔧 Backend (Flask)
+- Python 3.10+
+- Flask + flask-cors
+- PostgreSQL (via psycopg2)
+- JSON-Dateien für Sessions und Logs (`users.json`, `session.json`, `logs.json`)
+- PDF-Erstellung über ReportLab (für Wochenberichte)
 
-## Technologiestack
-
-- React (mit Vite)
+### 🎨 Frontend (React)
+- React mit Vite
 - Tailwind CSS
 - JSX-Komponentenstruktur
-
-## Seitenstruktur
-
-- `Home.jsx` – Startseite mit Backend-Check
-- `Login.jsx` – Login-Formular (noch leer)
-- `Projekte.jsx` – Projektübersicht (geplant)
-- `Profil.jsx` – Benutzerprofil (geplant)
-- `Zeiterfassung.jsx` – Zeiterfassung (geplant)
-
-## Komponenten
-
-- `Header.jsx`, `Footer.jsx`
-- Eigene Styles z. B. in `header.css`
-
-## ToDo
-
-- Routing mit `react-router-dom`
-- Layout (Navigation, Struktur)
-- Daten aus Backend anzeigen
-
+- Routing via `react-router-dom`
 
 ---
 
-# Projektstruktur
-
-# 📁 Projektstruktur – Mitarbeiterportal
-
-## Hauptverzeichnis
+## 📁 Projektstruktur
 
 ```
 webanwendung-mitarbeiterportal/
-├── backend/           → Flask-Backend mit API-Endpunkten
-├── frontend/          → React-Frontend mit Tailwind CSS
-├── dokumentation/     → Alle technischen Doku-Dateien
-├── .gitignore         → Git-Ausnahmen
-├── README.md          → Projektbeschreibung
+├── backend/
+│   ├── app.py
+│   ├── auth.py
+│   ├── user.py
+│   ├── project.py
+│   ├── time_tracking.py
+│   ├── data/
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/   → Header, Footer, Buttons
+│   │   ├── pages/        → Home, Login, Profil, Projekte, Zeiterfassung, Einstellungen
+│   │   └── styles/       → header.css, footer.css
+│   ├── public/
+│   └── package.json
+├── dokumentation/
+├── .gitignore
+├── README.md
 ```
 
-## Backend-Verzeichnis
+---
 
-- `app.py` – Einstiegspunkt, Start der Flask-App
-- `auth.py`, `user.py`, `project.py`, `time_tracking.py` – Moduldateien
-- `data/` – JSON-Dateien zur Benutzerspeicherung
-- `venv/` – Python-virtuelle Umgebung (nicht versioniert)
+## ✅ Bisher implementierte Features
 
-## Frontend-Verzeichnis
+### 🔐 Benutzerverwaltung
+- [x] Registrierung mit Passwort-Hashing
+- [x] Login mit Sessions (`session.json`)
+- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.)
 
-- `src/pages/` – Seiten wie Home, Login, Projekte
-- `src/components/` – Header, Footer, etc.
-- `src/styles/` – Eigene CSS-Dateien (z. B. `header.css`)
-- `index.html`, `vite.config.js`, `tailwind.config.js`
+### 🕒 Zeiterfassung
+- [x] Zeitstempeln (Start/Ende)
+- [x] Tages- & Wochenansicht
+- [x] PDF-Export der Wochenübersicht
+- [x] Automatischer Versand (freitags 18 Uhr, geplant)
 
-## Dokumentation
+### 📁 Projektverwaltung
+- [x] Projekte anlegen, bearbeiten, löschen
+- [ ] Projektbezogene Zeiterfassung (geplant)
 
-- Diese Datei: Strukturübersicht
-- Weitere Dateien: Setup-Anleitung, Backend, Frontend
-
+### ⚙️ Einstellungen
+- [x] Einstellungsseite mit Benutzeroptionen
 
 ---
 
-# Setup Anleitung
+## 🧪 API-Endpunkte (Auswahl)
 
-# ⚙️ Setup-Anleitung – Mitarbeiterportal
+| Methode | Endpoint               | Beschreibung                     |
+|---------|------------------------|----------------------------------|
+| POST    | `/api/login`           | Login mit Benutzername/Passwort |
+| POST    | `/api/register`        | Neue Registrierung               |
+| GET     | `/api/session`         | Aktuelle Session abfragen        |
+| GET     | `/api/projects`        | Alle Projekte abrufen            |
+| POST    | `/api/time/start`      | Startzeit erfassen               |
+| POST    | `/api/time/end`        | Endzeit erfassen                 |
 
-## Voraussetzungen
+---
 
-- Node.js (empfohlen: v18+)
-- npm
+## 🧑‍💻 Setup Anleitung
+
+### Voraussetzungen
+- Node.js (v18+ empfohlen)
 - Python 3.10+
-- PostgreSQL (optional, aktuell nicht eingebunden)
-- Ports: 5173 (Frontend), 5050 (Backend)
+- PostgreSQL-Server (läuft auf Raspberry Pi 5)
+- Ports: `5173` (Frontend), `5050` (Backend)
 
----
-
-## Backend starten
+### Backend starten
 
 ```bash
 cd backend
@@ -125,9 +102,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
----
-
-## Frontend starten
+### Frontend starten
 
 ```bash
 cd frontend
@@ -135,13 +110,15 @@ npm install
 npm run dev
 ```
 
----
-
-## Test
-
-- Öffne `http://localhost:5173` → Startseite erscheint
-- Backend erreichbar über `http://localhost:5050/api/ping`
-
+### Test
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- Backend-Test: [http://localhost:5050/api/ping](http://localhost:5050/api/ping)
 
 ---
 
+## 👥 Mitwirkende
+- Marco Grochowiak – Entwicklung & Projektleitung
+- Tobias Holtkamp – Fachliche Beratung
+
+## 📄 Lizenz
+MIT-Lizenz
