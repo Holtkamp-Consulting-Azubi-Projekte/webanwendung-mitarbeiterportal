@@ -1,0 +1,8 @@
+{
+    "m.grochowiak@holtkamp-consulting.de": {
+        "vorname": "Marco",
+        "nachname": "Grochowiak",
+        "passwort": "scrypt:32768:8:1$ukFl7qqP3CYcIRC1$46c3e844e7a52625a5de0808e4778d5f3c7cfb0b71ef1c5bad3ea4d605ccb32db9f1b70c7aaa25e97c31ae92b019cc202f356dc761fc4be805fbced2359cea88",
+        "rolle": ""
+    }
+}
