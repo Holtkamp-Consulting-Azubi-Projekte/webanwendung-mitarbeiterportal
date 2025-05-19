@@ -1,13 +1,14 @@
 import React from "react";
 
-const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte, onSort, sortConfig }) => {
+const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte }) => {
   // Corporate Design Button Klassen
   const cdButtonClasses = "text-primary border border-primary bg-transparent hover:text-white hover:bg-primary focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
-  const cdTableActionButtonClasses = "text-primary hover:text-primary-dark transition duration-200 text-sm mr-2"; // Angepasste Klassen für kleine Tabellen-Buttons
-  const cdTableDeleteButtonClasses = "text-red-600 hover:text-red-800 transition duration-200 text-sm"; // Angepasste Klassen für kleinen Lösch-Button
+  const cdTableActionButtonClasses = "text-primary hover:text-primary-dark transition duration-200 text-sm mr-2";
+  const cdTableDeleteButtonClasses = "text-red-600 hover:text-red-800 transition duration-200 text-sm";
+  const cdNewEntryButtonClasses = "text-primary hover:text-primary-dark transition duration-200 text-sm";
 
   // Corporate Design Tabellenkopf Klassen
-  const cdTableHeaderClasses = "border px-2 py-2 bg-primary text-white font-bold text-left"; // Angepasste Klassen für den Tabellenkopf
+  const cdTableHeaderClasses = "border px-2 py-2 bg-primary text-white font-bold text-left";
 
   // Funktion zur Berechnung der Arbeitszeit
   const calculateWorkTime = (beginn, ende, pause) => {
@@ -36,16 +37,28 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
       // Negative Arbeitszeit vermeiden
       if (workMinutes < 0) workMinutes = 0;
 
-      // Arbeitszeit formatieren (H:MM)
-      const hours = Math.floor(workMinutes / 60);
-      const minutes = workMinutes % 60;
-
-      return `${hours}h ${minutes}m`;
+      return workMinutes;
 
     } catch (e) {
       console.error("Fehler bei der Arbeitszeitberechnung:", e);
-      return "Fehler";
+      return 0;
     }
+  };
+
+  // Funktion zur Formatierung der Arbeitszeit
+  const formatWorkTime = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
+
+  // Funktion zur Berechnung der Gesamtarbeitszeit
+  const calculateTotalWorkTime = (entries) => {
+    const totalMinutes = entries.reduce((total, entry) => {
+      const minutes = calculateWorkTime(entry.beginn, entry.ende, entry.pause);
+      return total + minutes;
+    }, 0);
+    return formatWorkTime(totalMinutes);
   };
 
   // Funktion zur Aufteilung von Projektname und Kunde
@@ -100,52 +113,25 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
 
   return (
     <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
+      <div className="mb-4">
         <h2 className="text-xl font-bold">Zeitmatrix</h2>
-        <button
-          className={cdButtonClasses}
-          onClick={onAddClick}
-        >
-          Neuer Eintrag
-        </button>
       </div>
-      {/* Wrapper div für Scrollbarkeit */}
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200">
-          <thead className="sticky top-0 bg-white z-10"> {/* Sticky Header */}
+          <thead className="sticky top-0 bg-white z-10">
             <tr>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('mitarbeiter')}>
-                Mitarbeiter {sortConfig.key === 'mitarbeiter' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('datum')}>
-                Datum {sortConfig.key === 'datum' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('beginn')}>
-                Beginn {sortConfig.key === 'beginn' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('ende')}>
-                Ende {sortConfig.key === 'ende' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('pause')}>
-                Pause (min) {sortConfig.key === 'pause' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('arbeitszeit')}> {/* Annahme: Arbeitszeit-Feld existiert im Backend oder wird berechnet und hinzugefügt */}
-                Arbeitszeit {sortConfig.key === 'arbeitszeit' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('projekt')}>
-                Projekt {sortConfig.key === 'projekt' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('arbeitsort')}>
-                Arbeitsort {sortConfig.key === 'arbeitsort' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
-              </th>
-              {/* Aktionen Spalte nicht sortierbar */}
+              <th className={cdTableHeaderClasses}>Mitarbeiter</th>
+              <th className={cdTableHeaderClasses}>Datum</th>
+              <th className={cdTableHeaderClasses}>Beginn</th>
+              <th className={cdTableHeaderClasses}>Ende</th>
+              <th className={cdTableHeaderClasses}>Pause (min)</th>
+              <th className={cdTableHeaderClasses}>Arbeitszeit</th>
+              <th className={cdTableHeaderClasses}>Projekt</th>
+              <th className={cdTableHeaderClasses}>Arbeitsort</th>
               <th className={`${cdTableHeaderClasses} text-center`}>Aktionen</th>
             </tr>
-            {/* Filter row */}
             <tr>
-              {/* Leere Zelle für Mitarbeiter, da kein Filter */}
               <th className="border px-2 py-1"></th>
-              {/* Filter für Datum */}
               <th className="border px-2 py-1">
                 <input
                   type="date"
@@ -154,15 +140,10 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                   className="w-full px-1 py-0.5 text-sm border rounded"
                 />
               </th>
-              {/* Leere Zelle für Beginn, da kein Filter */}
               <th className="border px-2 py-1"></th>
-              {/* Leere Zelle für Ende, da kein Filter */}
               <th className="border px-2 py-1"></th>
-              {/* Leere Zelle für Pause, da kein Filter */}
               <th className="border px-2 py-1"></th>
-              {/* Leere Zelle für Arbeitszeit, da kein Filter */}
               <th className="border px-2 py-1"></th>
-              {/* Filter für Projekt */}
               <th className="border px-2 py-1">
                 <select
                   value={filters.projekt || ''}
@@ -174,25 +155,23 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                     availableProjekte.map((projekt) => (
                       <option key={projekt} value={projekt}>{projekt}</option>
                     ))
-                  ) : ( /* Fallback-Option, wenn keine Projekte geladen sind */
-                     <option value="">Lade Projekte...</option>
+                  ) : (
+                    <option value="">Lade Projekte...</option>
                   )}
                 </select>
               </th>
-              {/* Filter für Arbeitsort */}
               <th className="border px-2 py-1">
-                 <select
-                   value={filters.arbeitsort || ''}
-                   onChange={(e) => onFilterChange('arbeitsort', e.target.value)}
-                   className="w-full px-1 py-0.5 text-sm border rounded"
-                 >
-                   <option value="">Alle</option>
-                   <option value="Büro">Büro</option>
-                   <option value="Homeoffice">Homeoffice</option>
-                   <option value="Kunde">Kunde</option>
-                 </select>
+                <select
+                  value={filters.arbeitsort || ''}
+                  onChange={(e) => onFilterChange('arbeitsort', e.target.value)}
+                  className="w-full px-1 py-0.5 text-sm border rounded"
+                >
+                  <option value="">Alle</option>
+                  <option value="Büro">Büro</option>
+                  <option value="Homeoffice">Homeoffice</option>
+                  <option value="Kunde">Kunde</option>
+                </select>
               </th>
-              {/* Zelle für Aktionen mit Zurücksetzen-Button */}
               <th className="border px-2 py-1 text-center">
                 <button
                   className="text-gray-500 hover:text-gray-700 text-sm"
@@ -207,65 +186,82 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-4 text-gray-400">
+                <td colSpan={9} className="text-center py-4 text-gray-400">
                   Keine Einträge vorhanden
                 </td>
               </tr>
             ) : (
-              entries.map((entry) => {
-                const rowClasses = isToday(entry.datum) ? "bg-purple-100 hover:bg-purple-200" : "hover:bg-gray-50"; // Hervorhebung und Hover-Effekt
-                return (
-                  <tr key={entry.id || Math.random()} className={rowClasses}>
-                    <td className="border px-2 py-1">{entry.mitarbeiter}</td>
-                    <td className="border px-2 py-1">
-                      <div>{formatDateToDMY(entry.datum)}</div>
-                      {entry.datum && <div className="text-xs text-gray-600">{getWeekday(entry.datum)}</div>}
-                    </td>
-                    <td className="border px-2 py-1">{entry.beginn}</td>
-                    <td className="border px-2 py-1">{entry.ende}</td>
-                    <td className="border px-2 py-1">{entry.pause}</td>
-                    <td className="border px-2 py-1">{calculateWorkTime(entry.beginn, entry.ende, entry.pause)}</td>
-                    <td className="border px-2 py-1"> {/* Projekte anzeigen */}
-                      {Array.isArray(entry.projekt) ? (
-                        entry.projekt.map((proj, index) => {
-                          const { projectName, customer } = splitProjectAndCustomer(proj);
-                          return (
-                            <div key={index}> {/* Optional: mb-1 oder ähnliches für Abstand zwischen Projekten */}
-                              <div>{projectName}</div>
-                              {customer && <div className="text-xs text-gray-600">{customer}</div>}
-                            </div>
-                          );
-                        })
-                      ) : ( // Fallback für einzelne Projekt-Strings
-                        (() => {
-                          const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
-                          return (
-                            <div>
-                               <div>{projectName}</div>
-                               {customer && <div className="text-xs text-gray-600">{customer}</div>}
-                            </div>
-                          );
-                        })()
-                      )}
-                    </td>
-                    <td className="border px-2 py-1">{entry.arbeitsort}</td>
-                    <td className="border px-2 py-1 text-center">
-                      <button
-                        className={cdTableActionButtonClasses}
-                        onClick={() => onEditClick(entry)}
-                      >
-                        Bearbeiten
-                      </button>
-                      <button
-                        className={cdTableDeleteButtonClasses}
-                        onClick={() => onDeleteClick(entry.id)}
-                      >
-                        Löschen
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })
+              <>
+                {entries.map((entry) => {
+                  const rowClasses = isToday(entry.datum) ? "bg-purple-100 hover:bg-purple-200" : "hover:bg-gray-50";
+                  return (
+                    <tr key={entry.id || Math.random()} className={rowClasses}>
+                      <td className="border px-2 py-1">{entry.mitarbeiter}</td>
+                      <td className="border px-2 py-1">
+                        <div>{formatDateToDMY(entry.datum)}</div>
+                        {entry.datum && <div className="text-xs text-gray-600">{getWeekday(entry.datum)}</div>}
+                      </td>
+                      <td className="border px-2 py-1">{entry.beginn}</td>
+                      <td className="border px-2 py-1">{entry.ende}</td>
+                      <td className="border px-2 py-1">{entry.pause}</td>
+                      <td className="border px-2 py-1">{formatWorkTime(calculateWorkTime(entry.beginn, entry.ende, entry.pause))}</td>
+                      <td className="border px-2 py-1">
+                        {Array.isArray(entry.projekt) ? (
+                          entry.projekt.map((proj, index) => {
+                            const { projectName, customer } = splitProjectAndCustomer(proj);
+                            return (
+                              <div key={index}>
+                                <div>{projectName}</div>
+                                {customer && <div className="text-xs text-gray-600">{customer}</div>}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          (() => {
+                            const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
+                            return (
+                              <div>
+                                <div>{projectName}</div>
+                                {customer && <div className="text-xs text-gray-600">{customer}</div>}
+                              </div>
+                            );
+                          })()
+                        )}
+                      </td>
+                      <td className="border px-2 py-1">{entry.arbeitsort}</td>
+                      <td className="border px-2 py-1 text-center">
+                        <button
+                          className={cdTableActionButtonClasses}
+                          onClick={() => onEditClick(entry)}
+                        >
+                          Bearbeiten
+                        </button>
+                        <button
+                          className={cdTableDeleteButtonClasses}
+                          onClick={() => onDeleteClick(entry.id)}
+                        >
+                          Löschen
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Statistik und Neuer Eintrag Button als letzte Zeile */}
+                <tr className="bg-gray-50 font-semibold">
+                  <td colSpan={6} className="border px-2 py-1 text-left">
+                    Gesamtarbeitszeit: {calculateTotalWorkTime(entries)}
+                  </td>
+                  <td colSpan={2} className="border px-2 py-1"></td>
+                  <td className="border px-2 py-1 text-center">
+                    <button
+                      className={cdNewEntryButtonClasses}
+                      onClick={onAddClick}
+                    >
+                      + Neuer Eintrag
+                    </button>
+                  </td>
+                </tr>
+              </>
             )}
           </tbody>
         </table>
