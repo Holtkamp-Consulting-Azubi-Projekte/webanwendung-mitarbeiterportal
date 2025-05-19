@@ -9,7 +9,7 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
     beginn: "",
     ende: "",
     pause: "",
-    projekt: "",
+    projekt: availableProjekte && availableProjekte.length > 0 ? availableProjekte[0] : "",
     arbeitsort: arbeitsorte[0],
   });
 
@@ -29,7 +29,7 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
         arbeitsort: arbeitsorte[0],
       });
     }
-  }, [isOpen, initialData, availableProjekte]); // availableProjekte als Abhängigkeit hinzufügen
+  }, [isOpen, initialData, availableProjekte]);
 
 
   const handleChange = (e) => {
@@ -98,7 +98,6 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
               name="ende"
               value={form.ende}
               onChange={handleChange}
-              required
               className="w-full border px-2 py-1 rounded"
             />
           </div>
@@ -109,7 +108,6 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
             value={form.pause}
             onChange={handleChange}
             min="0"
-            required
             className="w-full border px-2 py-1 rounded"
           />
           {/* Projekt Dropdown */}

@@ -7,9 +7,11 @@ const API_URL = "http://localhost:5050/api/time-entries/";
 // Temporäre Liste von Projekten für Testzwecke
 const TEMPORARY_TEST_PROJEKTE = [
   '', // Option für 'Alle' / Leere Auswahl im Modal
-  "Mitarbeiterportal (Kunde: Holtkam Consulting)",
+  "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
   "SAP Administration (Kunde: Winkelmann AG)",
-  "Treasor (Kunde: agentur für Arbeit)",
+  "Treasor (Kunde: Agentur für Arbeit)",
+  "Data Vault (Kunde: Targo Bank)",
+ 
 ];
 
 export default function Zeitmatrix() {

@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-12",
+    "beginn": "08:30",
+    "ende": "17:00",
+    "pause": "30",
+    "projekt": "SAP Administration (Kunde: Winkelmann AG)",
+    "arbeitsort": "Büro",
+    "id": "1747638411362"
+  },
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-13",
+    "beginn": "08:30",
+    "ende": "17:00",
+    "pause": "30",
+    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "arbeitsort": "Büro",
+    "id": "1747638438515"
+  },
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-14",
+    "beginn": "08:30",
+    "ende": "17:00",
+    "pause": "30",
+    "projekt": "SAP Administration (Kunde: Winkelmann AG)",
+    "arbeitsort": "Büro",
+    "id": "1747638462795"
+  },
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-15",
+    "beginn": "08:30",
+    "ende": "17:00",
+    "pause": "30",
+    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "arbeitsort": "Büro",
+    "id": "1747638571704"
+  },
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-16",
+    "beginn": "08:30",
+    "ende": "17:00",
+    "pause": "30",
+    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "arbeitsort": "Homeoffice",
+    "id": "1747638623519"
+  },
+  {
+    "mitarbeiter": "Marco",
+    "datum": "2025-05-19",
+    "beginn": "08:30",
+    "ende": "",
+    "pause": "",
+    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "arbeitsort": "Büro",
+    "id": "1747638646392"
+  }
+]

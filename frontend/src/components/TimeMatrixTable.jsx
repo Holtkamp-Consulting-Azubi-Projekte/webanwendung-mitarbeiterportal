@@ -70,6 +70,34 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
     }
   };
 
+  // Funktion zur Überprüfung, ob ein Datum der heutige Tag ist
+  const isToday = (dateString) => {
+      if (!dateString) return false;
+      const today = new Date();
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Monate in JavaScript sind 0-basiert
+      const entryDate = new Date(year, month - 1, day);
+
+      return entryDate.getFullYear() === today.getFullYear() &&
+             entryDate.getMonth() === today.getMonth() &&
+             entryDate.getDate() === today.getDate();
+  };
+
+  // Funktion zur Ermittlung des Wochentags
+  const getWeekday = (dateString) => {
+    if (!dateString) return "";
+    try {
+      const [year, month, day] = dateString.split('-').map(Number);
+      // Monate in JavaScript sind 0-basiert
+      const date = new Date(year, month - 1, day);
+      const weekdays = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+      return weekdays[date.getDay()];
+    } catch (e) {
+      console.error("Fehler bei der Ermittlung des Wochentags:", e);
+      return "";
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-4">
@@ -175,10 +203,14 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
             ) : (
               entries.map((entry) => {
                 const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
+                const rowClasses = isToday(entry.datum) ? "bg-purple-100 hover:bg-purple-200" : "hover:bg-gray-50"; // Hervorhebung und Hover-Effekt
                 return (
-                  <tr key={entry.id || Math.random()}>
+                  <tr key={entry.id || Math.random()} className={rowClasses}>
                     <td className="border px-2 py-1">{entry.mitarbeiter}</td>
-                    <td className="border px-2 py-1">{formatDateToDMY(entry.datum)}</td>
+                    <td className="border px-2 py-1">
+                      <div>{formatDateToDMY(entry.datum)}</div>
+                      {entry.datum && <div className="text-xs text-gray-600">{getWeekday(entry.datum)}</div>}
+                    </td>
                     <td className="border px-2 py-1">{entry.beginn}</td>
                     <td className="border px-2 py-1">{entry.ende}</td>
                     <td className="border px-2 py-1">{entry.pause}</td>
