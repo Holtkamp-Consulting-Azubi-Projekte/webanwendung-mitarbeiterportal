@@ -24,6 +24,11 @@ def load_entries():
                     entry['id'] = str(int(time.time() * 1000))
                     updated_data = True
                     time.sleep(0.001) # Kurze Pause, um eindeutige Timestamps zu gewährleisten
+                
+                # Konvertiere einzelnes Projekt in Array, falls nötig
+                if 'projekt' in entry and not isinstance(entry['projekt'], list):
+                    entry['projekt'] = [entry['projekt']]
+                    updated_data = True
 
             # Wenn neue IDs hinzugefügt wurden, Datei speichern
             if updated_data:
@@ -50,6 +55,10 @@ def add_entry():
     if not data:
         return jsonify({'error': 'Keine Daten erhalten'}), 400
 
+    # Stelle sicher, dass projekt ein Array ist
+    if 'projekt' in data and not isinstance(data['projekt'], list):
+        data['projekt'] = [data['projekt']]
+
     entries = load_entries()
     # Eindeutige ID hinzufügen (falls noch nicht vorhanden, sollte aber durch load_entries abgedeckt sein)
     if 'id' not in data or data['id'] is None:
@@ -59,40 +68,30 @@ def add_entry():
     save_entries(entries)
     return jsonify({'status': 'ok', 'message': 'Eintrag gespeichert', 'id': data['id']}), 201
 
-@time_matrix_bp.route('/<string:entry_id>', methods=['PUT'])
+@time_matrix_bp.route('/<entry_id>', methods=['PUT'])
 def update_entry(entry_id):
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Keine Daten erhalten'}), 400
 
+    # Stelle sicher, dass projekt ein Array ist
+    if 'projekt' in data and not isinstance(data['projekt'], list):
+        data['projekt'] = [data['projekt']]
+
     entries = load_entries()
-    updated = False
     for i, entry in enumerate(entries):
-        # Überprüfen, ob entry und entry.get('id') nicht None sind, bevor verglichen wird
-        if entry and entry.get('id') == entry_id:
-            # Eintrag aktualisieren (ID nicht ändern)
-            entries[i] = {**data, 'id': entry_id}
-            updated = True
-            break
+        if entry['id'] == entry_id:
+            entries[i] = {**entry, **data}
+            save_entries(entries)
+            return jsonify({'status': 'ok', 'message': 'Eintrag aktualisiert'})
+    return jsonify({'error': 'Eintrag nicht gefunden'}), 404
 
-    if updated:
-        save_entries(entries)
-        return jsonify({'status': 'ok', 'message': f'Eintrag {entry_id} aktualisiert'})
-    else:
-        # Gebe 404 zurück, wenn Eintrag nicht gefunden
-        return jsonify({'error': f'Eintrag {entry_id} nicht gefunden'}), 404
-
-@time_matrix_bp.route('/<string:entry_id>', methods=['DELETE'])
+@time_matrix_bp.route('/<entry_id>', methods=['DELETE'])
 def delete_entry(entry_id):
     entries = load_entries()
-    original_count = len(entries)
-    # Filtert den Eintrag mit der gegebenen ID heraus.
-    # Sicherstellen, dass entry und entry.get('id') nicht None sind
-    entries = [entry for entry in entries if entry and entry.get('id') != entry_id]
-
-    if len(entries) < original_count:
-        save_entries(entries)
-        return jsonify({'status': 'ok', 'message': f'Eintrag {entry_id} gelöscht'})
-    else:
-        # Gebe 404 zurück, wenn Eintrag nicht gefunden (passiert, wenn kein Eintrag mit der ID gefunden wurde)
-        return jsonify({'error': f'Eintrag {entry_id} nicht gefunden'}), 404 
+    for i, entry in enumerate(entries):
+        if entry['id'] == entry_id:
+            del entries[i]
+            save_entries(entries)
+            return jsonify({'status': 'ok', 'message': 'Eintrag gelöscht'})
+    return jsonify({'error': 'Eintrag nicht gefunden'}), 404 

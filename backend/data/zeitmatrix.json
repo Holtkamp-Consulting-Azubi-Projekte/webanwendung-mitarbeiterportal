@@ -5,7 +5,9 @@
     "beginn": "08:30",
     "ende": "17:00",
     "pause": "30",
-    "projekt": "SAP Administration (Kunde: Winkelmann AG)",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
     "arbeitsort": "Büro",
     "id": "1747638411362"
   },
@@ -15,7 +17,9 @@
     "beginn": "08:30",
     "ende": "17:00",
     "pause": "30",
-    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
+    ],
     "arbeitsort": "Büro",
     "id": "1747638438515"
   },
@@ -25,7 +29,9 @@
     "beginn": "08:30",
     "ende": "17:00",
     "pause": "30",
-    "projekt": "SAP Administration (Kunde: Winkelmann AG)",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
     "arbeitsort": "Büro",
     "id": "1747638462795"
   },
@@ -35,17 +41,23 @@
     "beginn": "08:30",
     "ende": "17:00",
     "pause": "30",
-    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+      "SAP Administration (Kunde: Winkelmann AG)",
+      "Data Vault (Kunde: APO Bank)"
+    ],
     "arbeitsort": "Büro",
     "id": "1747638571704"
   },
   {
     "mitarbeiter": "Marco",
     "datum": "2025-05-16",
-    "beginn": "08:30",
-    "ende": "17:00",
+    "beginn": "07:30",
+    "ende": "16:00",
     "pause": "30",
-    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
+    ],
     "arbeitsort": "Homeoffice",
     "id": "1747638623519"
   },
@@ -55,8 +67,71 @@
     "beginn": "08:30",
     "ende": "",
     "pause": "",
-    "projekt": "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
     "arbeitsort": "Büro",
     "id": "1747638646392"
+  },
+  {
+    "datum": "2025-05-09",
+    "beginn": "07:30",
+    "ende": "16:00",
+    "pause": "30",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
+    ],
+    "arbeitsort": "Homeoffice",
+    "mitarbeiter": "Marco",
+    "id": "1747649201700"
+  },
+  {
+    "datum": "2025-05-08",
+    "beginn": "08:30",
+    "ende": "14:00",
+    "pause": "30",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
+    "arbeitsort": "Büro",
+    "mitarbeiter": "Marco",
+    "id": "1747650661416"
+  },
+  {
+    "datum": "2025-05-08",
+    "beginn": "14:00",
+    "ende": "17:00",
+    "pause": "",
+    "projekt": [
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
+    ],
+    "arbeitsort": "Büro",
+    "mitarbeiter": "Marco",
+    "id": "1747650707948"
+  },
+  {
+    "datum": "2025-05-09",
+    "beginn": "08:00",
+    "ende": "10:00",
+    "pause": "",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
+    "arbeitsort": "Homeoffice",
+    "mitarbeiter": "Marco",
+    "id": "1747650824124"
+  },
+  {
+    "datum": "2025-05-09",
+    "beginn": "13:00",
+    "ende": "17:00",
+    "pause": "",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
+    "arbeitsort": "Büro",
+    "mitarbeiter": "Marco",
+    "id": "1747650858733"
   }
 ]

@@ -10,7 +10,7 @@ const TEMPORARY_TEST_PROJEKTE = [
   "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
   "SAP Administration (Kunde: Winkelmann AG)",
   "Treasor (Kunde: Agentur für Arbeit)",
-  "Data Vault (Kunde: Targo Bank)",
+  "Data Vault (Kunde: APO Bank)",
  
 ];
 
@@ -21,6 +21,7 @@ export default function Zeitmatrix() {
   const [error, setError] = useState(null);
   const [editingEntry, setEditingEntry] = useState(null);
   const [filters, setFilters] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: 'datum', direction: 'ascending' }); // Standard-Sortierung
 
   // Einträge vom Backend laden
   const fetchEntries = () => {
@@ -53,26 +54,49 @@ export default function Zeitmatrix() {
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       for (const key in filters) {
-        if (filters[key]) {
-          const filterValue = String(filters[key]).toLowerCase();
-          const entryValue = String(entry[key]).toLowerCase();
+        const filterValue = filters[key];
 
-          if (key === 'datum') {
-             if (!entryValue.startsWith(filterValue)) {
+        // Nur filtern, wenn ein Filterwert gesetzt ist
+        if (filterValue !== undefined && filterValue !== null && filterValue !== '') {
+          const lowerCaseFilterValue = String(filterValue).toLowerCase().trim();
+
+          // Spezielle Behandlung für das 'projekt'-Feld (kann Array sein)
+          if (key === 'projekt') {
+            const entryProjects = Array.isArray(entry.projekt)
+              ? entry.projekt.map(p => String(p).toLowerCase().trim())
+              : [String(entry.projekt).toLowerCase().trim()];
+
+            // Prüfen, ob der Filterwert als Teilstring in einem der Projekte des Eintrags enthalten ist
+            const projectMatch = entryProjects.some(proj => proj.includes(lowerCaseFilterValue));
+
+            if (!projectMatch) {
+              return false; // Eintrag ausschließen, wenn Filterwert nicht als Teilstring in den Projekten gefunden wurde
+            }
+          }
+          // Spezielle Behandlung für das 'datum'-Feld (startsWith)
+          else if (key === 'datum') {
+             const entryValue = String(entry[key]).toLowerCase();
+             if (!entryValue.startsWith(lowerCaseFilterValue)) {
                 return false;
              }
           }
-          else if (key === 'arbeitsort' || key === 'projekt') {
-              if (entryValue !== filterValue) {
+          // Spezielle Behandlung für 'arbeitsort' (exakter Match)
+          else if (key === 'arbeitsort') {
+              const entryValue = String(entry[key]).toLowerCase().trim();
+              if (entryValue !== lowerCaseFilterValue) {
                   return false;
               }
           }
-          else if (!entryValue.includes(filterValue)) {
-            return false;
+          // Standardbehandlung für andere Felder (includes)
+          else {
+             const entryValue = String(entry[key]).toLowerCase().trim();
+             if (!entryValue.includes(lowerCaseFilterValue)) {
+               return false;
+             }
           }
         }
       }
-      return true;
+      return true; // Eintrag beibehalten, wenn alle Filterbedingungen erfüllt sind
     });
   }, [entries, filters]);
 
@@ -81,20 +105,63 @@ export default function Zeitmatrix() {
     // Erstelle eine Kopie, um das ursprüngliche Array nicht zu verändern
     const sortableEntries = [...filteredEntries];
 
+    if (!sortConfig.key) { // Keine Sortierung angewendet
+      return sortableEntries;
+    }
+
     sortableEntries.sort((a, b) => {
-      // Sortiere nach Datum (string comparison funktioniert, da YYYY-MM-DD Format)
-      if (a.datum < b.datum) return -1;
-      if (a.datum > b.datum) return 1;
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
 
-      // Wenn Datum gleich, sortiere nach Beginnzeit (string comparison funktioniert, da HH:MM Format)
-      if (a.beginn < b.beginn) return -1;
-      if (a.beginn > b.beginn) return 1;
-
-      return 0; // Einträge sind gleich
+      // Behandlung für verschiedene Datentypen (string, number)
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+         // Spezielle Behandlung für Datum und Zeit für korrekte chronologische Sortierung
+         if (sortConfig.key === 'datum' || sortConfig.key === 'beginn' || sortConfig.key === 'ende') {
+             const dateA = new Date(`1970-01-01T${aValue}`); // Dummy-Datum für Zeitvergleich
+             const dateB = new Date(`1970-01-01T${bValue}`);
+             if (dateA < dateB) return sortConfig.direction === 'ascending' ? -1 : 1;
+             if (dateA > dateB) return sortConfig.direction === 'ascending' ? 1 : -1;
+             return 0;
+         } else { // Standard String-Vergleich
+            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+         }
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        // Numerischer Vergleich
+        return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+      } else { // Fallback für andere Typen oder gemischte Typen (z.B. N/A)
+        // Behandle null/undefined Werte als kleiner als alles andere
+        if (aValue == null && bValue != null) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (aValue != null && bValue == null) return sortConfig.direction === 'ascending' ? 1 : -1;
+        if (aValue == null && bValue == null) return 0;
+        // Versuche string-Vergleich als Fallback
+        const stringA = String(aValue);
+        const stringB = String(bValue);
+        if (stringA < stringB) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (stringA > stringB) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+      }
     });
 
     return sortableEntries;
   }, [filteredEntries]);
+
+  // Funktion zum Ändern der Sortierung
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    // Wenn bereits nach dieser Spalte sortiert wird, wechsle die Richtung
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    } else if (sortConfig.key === key && sortConfig.direction === 'descending') {
+      // Wenn absteigend sortiert und nochmal geklickt, Sortierung für diese Spalte entfernen (oder Standard setzen)
+      // Hier setzen wir es zurück auf die Standard-Sortierung nach Datum aufsteigend
+       setSortConfig({ key: 'datum', direction: 'ascending' });
+       return;
+    }
+    // Setze die neue Sortierung
+    setSortConfig({ key, direction });
+  };
 
   const handleFilterChange = (key, value) => {
     if (key === 'all') {
@@ -124,6 +191,12 @@ export default function Zeitmatrix() {
 
   // Eintrag speichern oder aktualisieren
   const handleSaveEntry = (entryData) => {
+    // Temporäre Lösung: Mitarbeiter festlegen, da Login-Logik noch fehlt.
+    // TODO: Ersetzen durch den tatsächlich eingeloggten Benutzer, sobald die Login-Logik implementiert ist.
+    if (!editingEntry) { // Nur bei neuen Einträgen den Mitarbeiter setzen
+      entryData.mitarbeiter = "Marco"; // Temporärer Standardwert
+    }
+
     const method = editingEntry ? "PUT" : "POST";
     const url = editingEntry ? `${API_URL}${editingEntry.id}` : API_URL;
 
@@ -183,6 +256,8 @@ export default function Zeitmatrix() {
           filters={filters}
           onFilterChange={handleFilterChange}
           availableProjekte={availableProjekte}
+          onSort={handleSort}
+          sortConfig={sortConfig}
         />
       )}
       <TimeEntryModal

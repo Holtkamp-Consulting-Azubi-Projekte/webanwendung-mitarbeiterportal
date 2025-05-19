@@ -4,53 +4,89 @@ const arbeitsorte = ["Büro", "Homeoffice", "Kunde"];
 
 const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekte }) => {
   const [form, setForm] = useState({
-    mitarbeiter: "",
     datum: "",
     beginn: "",
     ende: "",
     pause: "",
-    projekt: availableProjekte && availableProjekte.length > 0 ? availableProjekte[0] : "",
+    projekt: [], // Jetzt ein Array
     arbeitsort: arbeitsorte[0],
   });
 
   // Formular mit initialen Daten füllen, wenn Modal geöffnet wird oder initialData sich ändert
   useEffect(() => {
     if (isOpen && initialData) {
-      setForm(initialData);
+      // Stelle sicher, dass projekt ein Array ist
+      const projektArray = Array.isArray(initialData.projekt) ? initialData.projekt : [initialData.projekt];
+      setForm({ ...initialData, projekt: projektArray });
     } else if (isOpen && !initialData) {
       // Formular zurücksetzen, wenn neues Modal geöffnet wird
-       setForm({
-        mitarbeiter: "",
+      setForm({
         datum: "",
         beginn: "",
         ende: "",
         pause: "",
-        projekt: availableProjekte && availableProjekte.length > 0 ? availableProjekte[0] : "", // Erstes Projekt oder leer
+        projekt: [], // Leeres Array für neue Einträge
         arbeitsort: arbeitsorte[0],
       });
     }
-  }, [isOpen, initialData, availableProjekte]);
-
+  }, [isOpen, initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Neue Funktion für die Mehrfachauswahl von Projekten
+  const handleProjectChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setForm(prev => ({ ...prev, projekt: selectedOptions }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Client-seitige Validierung
+    if (!form.datum) {
+      alert("Bitte Datum eingeben.");
+      return;
+    }
+    if (!form.beginn) {
+      alert("Bitte Beginnzeit eingeben.");
+      return;
+    }
+    // Überprüfen der Endzeit nur, wenn sie eingegeben wurde
+    if (form.ende) {
+      const [beginHour, beginMinute] = form.beginn.split(':').map(Number);
+      const [endHour, endMinute] = form.ende.split(':').map(Number);
+      const startDate = new Date(1970, 0, 1, beginHour, beginMinute);
+      const endDate = new Date(1970, 0, 1, endHour, endMinute);
+
+       // Wenn Endzeit vor Startzeit UND es ist derselbe Tag, ist es ungültig
+       // Über Mitternacht liegende Zeiten werden hier als gültig betrachtet (kann bei Bedarf angepasst werden)
+       if (endDate < startDate) {
+           // Eine einfachere Prüfung, die Mitternachtsüberschreitung ignoriert:
+           const beginMinutes = beginHour * 60 + beginMinute;
+           const endMinutes = endHour * 60 + endMinute;
+           if (endMinutes < beginMinutes) {
+               alert("Endzeit muss nach Beginnzeit liegen.");
+               return;
+           }
+       }
+    }
+    // Überprüfen der Pausenzeit
+    const pauseMinutes = Number(form.pause);
+    if (form.pause !== '' && (isNaN(pauseMinutes) || pauseMinutes < 0)) {
+         alert("Pause (min) muss eine positive Zahl sein.");
+         return;
+    }
+     // Überprüfen, ob mindestens ein Projekt ausgewählt ist (wenn required)
+    if (form.projekt.length === 0) {
+         alert("Bitte mindestens ein Projekt auswählen.");
+         return;
+    }
+
     // Beim Speichern die ID mitgeben, wenn vorhanden (Bearbeiten)
     onSave(initialData ? { ...form, id: initialData.id } : form);
-    // Formular zurücksetzen (wird durch useEffect bei Modal-Schließen auch gemacht)
-    // setForm({
-    //   mitarbeiter: "",
-    //   datum: "",
-    //   beginn: "",
-    //   ende: "",
-    //   pause: "",
-    //   projekt: "",
-    //   arbeitsort: arbeitsorte[0],
-    // });
   };
 
   if (!isOpen) return null;
@@ -67,15 +103,6 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            name="mitarbeiter"
-            placeholder="Mitarbeiter"
-            value={form.mitarbeiter}
-            onChange={handleChange}
-            required
-            className="w-full border px-2 py-1 rounded"
-          />
           <input
             type="date"
             name="datum"
@@ -110,23 +137,28 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
             min="0"
             className="w-full border px-2 py-1 rounded"
           />
-          {/* Projekt Dropdown */}
+          {/* Projekt Mehrfachauswahl */}
           <select
             name="projekt"
             value={form.projekt}
-            onChange={handleChange}
+            onChange={handleProjectChange}
             required
-            className="w-full border px-2 py-1 rounded"
+            multiple
+            className="w-full border px-2 py-1 rounded h-32"
           >
-            {/* Überprüfen, ob availableProjekte vorhanden und nicht leer ist */}
             {availableProjekte && availableProjekte.length > 0 ? (
               availableProjekte.map((projekt) => (
-                <option key={projekt} value={projekt}>{projekt || "Bitte Projekt wählen"}</option>
+                <option key={projekt} value={projekt}>
+                  {projekt || "Bitte Projekt wählen"}
+                </option>
               ))
-            ) : ( /* Fallback-Option, wenn keine Projekte geladen sind */
-               <option value="">Lade Projekte...</option>
+            ) : (
+              <option value="">Lade Projekte...</option>
             )}
           </select>
+          <div className="text-xs text-gray-500">
+            Halten Sie die Strg-Taste (Windows) oder die Cmd-Taste (Mac) gedrückt, um mehrere Projekte auszuwählen.
+          </div>
           <select
             name="arbeitsort"
             value={form.arbeitsort}

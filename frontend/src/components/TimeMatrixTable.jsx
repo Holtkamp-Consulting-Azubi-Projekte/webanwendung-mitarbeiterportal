@@ -1,6 +1,6 @@
 import React from "react";
 
-const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte }) => {
+const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte, onSort, sortConfig }) => {
   // Corporate Design Button Klassen
   const cdButtonClasses = "text-primary border border-primary bg-transparent hover:text-white hover:bg-primary focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
   const cdTableActionButtonClasses = "text-primary hover:text-primary-dark transition duration-200 text-sm mr-2"; // Angepasste Klassen für kleine Tabellen-Buttons
@@ -50,12 +50,12 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
 
   // Funktion zur Aufteilung von Projektname und Kunde
   const splitProjectAndCustomer = (projektString) => {
-    if (!projektString) return { projectName: "N/A", customer: "" };
+    if (!projektString || typeof projektString !== 'string') return { projectName: projektString || "N/A", customer: "" };
     const parts = projektString.match(/(.+)\s\(Kunde:\s(.+)\)/);
     if (parts && parts[1] && parts[2]) {
       return { projectName: parts[1].trim(), customer: `Kunde: ${parts[2].trim()}` };
     } else {
-      return { projectName: projektString, customer: "" }; // Kein Kunde gefunden, nur Projektname zurückgeben
+      return { projectName: projektString, customer: "" }; // Kein Kunde gefunden oder Format passt nicht
     }
   };
 
@@ -114,62 +114,72 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
         <table className="min-w-full bg-white border border-gray-200">
           <thead className="sticky top-0 bg-white z-10"> {/* Sticky Header */}
             <tr>
-              <th className={cdTableHeaderClasses}>Mitarbeiter</th>
-              <th className={cdTableHeaderClasses}>Datum</th>
-              <th className={cdTableHeaderClasses}>Beginn</th>
-              <th className={cdTableHeaderClasses}>Ende</th>
-              <th className={cdTableHeaderClasses}>Pause (min)</th>
-              <th className={cdTableHeaderClasses}>Arbeitszeit</th>
-              <th className={cdTableHeaderClasses}>Projekt</th>
-              <th className={cdTableHeaderClasses}>Arbeitsort</th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('mitarbeiter')}>
+                Mitarbeiter {sortConfig.key === 'mitarbeiter' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('datum')}>
+                Datum {sortConfig.key === 'datum' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('beginn')}>
+                Beginn {sortConfig.key === 'beginn' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('ende')}>
+                Ende {sortConfig.key === 'ende' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('pause')}>
+                Pause (min) {sortConfig.key === 'pause' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('arbeitszeit')}> {/* Annahme: Arbeitszeit-Feld existiert im Backend oder wird berechnet und hinzugefügt */}
+                Arbeitszeit {sortConfig.key === 'arbeitszeit' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('projekt')}>
+                Projekt {sortConfig.key === 'projekt' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              <th className={`${cdTableHeaderClasses} cursor-pointer`} onClick={() => onSort('arbeitsort')}>
+                Arbeitsort {sortConfig.key === 'arbeitsort' && (sortConfig.direction === 'ascending' ? '▲' : '▼')}
+              </th>
+              {/* Aktionen Spalte nicht sortierbar */}
               <th className={`${cdTableHeaderClasses} text-center`}>Aktionen</th>
             </tr>
             {/* Filter row */}
             <tr>
+              {/* Leere Zelle für Mitarbeiter, da kein Filter */}
+              <th className="border px-2 py-1"></th>
+              {/* Filter für Datum */}
               <th className="border px-2 py-1">
                 <input
-                  type="text"
-                  placeholder="Filtern..."
-                  value={filters.mitarbeiter || ''}
-                  onChange={(e) => onFilterChange('mitarbeiter', e.target.value)}
-                  className="w-full px-1 py-0.5 text-sm border rounded"
-                />
-              </th>
-              <th className="border px-2 py-1">
-               <input
                   type="date"
                   value={filters.datum || ''}
                   onChange={(e) => onFilterChange('datum', e.target.value)}
                   className="w-full px-1 py-0.5 text-sm border rounded"
                 />
               </th>
-              <th className="border px-2 py-1">
-
-              </th>
-              <th className="border px-2 py-1">
-
-              </th>
-              <th className="border px-2 py-1">{/* Filter für Pause entfernt */}
-
-              </th>
-              <th className="border px-2 py-1">{/* Kein Filter für Arbeitszeit */}
-                {/* Optional: Filter nach Stundenbereich später */}
-              </th>
+              {/* Leere Zelle für Beginn, da kein Filter */}
+              <th className="border px-2 py-1"></th>
+              {/* Leere Zelle für Ende, da kein Filter */}
+              <th className="border px-2 py-1"></th>
+              {/* Leere Zelle für Pause, da kein Filter */}
+              <th className="border px-2 py-1"></th>
+              {/* Leere Zelle für Arbeitszeit, da kein Filter */}
+              <th className="border px-2 py-1"></th>
+              {/* Filter für Projekt */}
               <th className="border px-2 py-1">
                 <select
                   value={filters.projekt || ''}
                   onChange={(e) => onFilterChange('projekt', e.target.value)}
                   className="w-full px-1 py-0.5 text-sm border rounded"
                 >
+                  <option value="">Alle</option>
                   {availableProjekte && availableProjekte.length > 0 ? (
                     availableProjekte.map((projekt) => (
-                      <option key={projekt} value={projekt}>{projekt || "Alle"}</option>
+                      <option key={projekt} value={projekt}>{projekt}</option>
                     ))
                   ) : ( /* Fallback-Option, wenn keine Projekte geladen sind */
                      <option value="">Lade Projekte...</option>
                   )}
                 </select>
               </th>
+              {/* Filter für Arbeitsort */}
               <th className="border px-2 py-1">
                  <select
                    value={filters.arbeitsort || ''}
@@ -182,7 +192,8 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                    <option value="Kunde">Kunde</option>
                  </select>
               </th>
-              <th className="border px-2 py-1">{/* Filter für Aktionen */}
+              {/* Zelle für Aktionen mit Zurücksetzen-Button */}
+              <th className="border px-2 py-1 text-center">
                 <button
                   className="text-gray-500 hover:text-gray-700 text-sm"
                   onClick={() => onFilterChange('all', '')}
@@ -196,13 +207,12 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-4 text-gray-400">
+                <td colSpan={8} className="text-center py-4 text-gray-400">
                   Keine Einträge vorhanden
                 </td>
               </tr>
             ) : (
               entries.map((entry) => {
-                const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
                 const rowClasses = isToday(entry.datum) ? "bg-purple-100 hover:bg-purple-200" : "hover:bg-gray-50"; // Hervorhebung und Hover-Effekt
                 return (
                   <tr key={entry.id || Math.random()} className={rowClasses}>
@@ -215,9 +225,28 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                     <td className="border px-2 py-1">{entry.ende}</td>
                     <td className="border px-2 py-1">{entry.pause}</td>
                     <td className="border px-2 py-1">{calculateWorkTime(entry.beginn, entry.ende, entry.pause)}</td>
-                    <td className="border px-2 py-1">
-                      <div>{projectName}</div>
-                      {customer && <div className="text-xs text-gray-600">{customer}</div>}
+                    <td className="border px-2 py-1"> {/* Projekte anzeigen */}
+                      {Array.isArray(entry.projekt) ? (
+                        entry.projekt.map((proj, index) => {
+                          const { projectName, customer } = splitProjectAndCustomer(proj);
+                          return (
+                            <div key={index}> {/* Optional: mb-1 oder ähnliches für Abstand zwischen Projekten */}
+                              <div>{projectName}</div>
+                              {customer && <div className="text-xs text-gray-600">{customer}</div>}
+                            </div>
+                          );
+                        })
+                      ) : ( // Fallback für einzelne Projekt-Strings
+                        (() => {
+                          const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
+                          return (
+                            <div>
+                               <div>{projectName}</div>
+                               {customer && <div className="text-xs text-gray-600">{customer}</div>}
+                            </div>
+                          );
+                        })()
+                      )}
                     </td>
                     <td className="border px-2 py-1">{entry.arbeitsort}</td>
                     <td className="border px-2 py-1 text-center">
@@ -227,7 +256,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                       >
                         Bearbeiten
                       </button>
-                       <button
+                      <button
                         className={cdTableDeleteButtonClasses}
                         onClick={() => onDeleteClick(entry.id)}
                       >
