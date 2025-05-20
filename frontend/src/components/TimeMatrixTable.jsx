@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte }) => {
   // Corporate Design Button Klassen
@@ -151,11 +151,61 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
     }
   };
 
-  // Generiere Monatstage
-  const monthDays = generateMonthDays();
+  // Filterlogik
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      for (const key in filters) {
+        const filterValue = filters[key];
 
-  // Gruppiere Einträge nach Datum
-  const groupedEntries = entries.reduce((acc, entry) => {
+        // Ignoriere leere oder undefinierte Filterwerte
+        if (filterValue === undefined || filterValue === null || filterValue === '') {
+          continue; // Gehe zum nächsten Filter
+        }
+
+        const lowerCaseFilterValue = String(filterValue).toLowerCase().trim();
+
+        if (key === 'projekt') {
+          // Prüfe, ob eines der Projekte im Eintrag den Filterwert enthält
+          const entryProjects = Array.isArray(entry.projekt)
+            ? entry.projekt.map(p => String(p).toLowerCase().trim())
+            : [String(entry.projekt || '').toLowerCase().trim()]; // Behandle auch nicht-Array-Formate und null/undefined
+
+          const projectMatch = entryProjects.some(proj => proj.includes(lowerCaseFilterValue));
+          if (!projectMatch) return false; // Eintrag stimmt nicht mit Projektfilter überein
+        } else if (key === 'datum') {
+          // Prüfe, ob das Datum exakt übereinstimmt
+          const entryValue = String(entry[key]).toLowerCase();
+          // Beim Datumsfilter muss das Datum exakt übereinstimmen
+          if (entryValue !== lowerCaseFilterValue) return false; // Eintrag stimmt nicht mit Datumsfilter überein
+        } else if (key === 'arbeitsort') {
+          // Prüfe, ob der Arbeitsort exakt übereinstimmt
+          const entryValue = String(entry[key] || '').toLowerCase().trim(); // Behandle null/undefined
+          if (entryValue !== lowerCaseFilterValue) return false; // Eintrag stimmt nicht mit Arbeitsortfilter überein
+        }
+        // Füge hier bei Bedarf weitere Filterfelder hinzu
+      }
+      return true; // Eintrag stimmt mit allen gesetzten Filtern überein
+    });
+  }, [entries, filters]);
+
+  // Chronologische Sortierung (nach Datum und Beginnzeit) - bleibt gleich, sortiert filteredEntries
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort((a, b) => {
+      // Zuerst nach Datum sortieren
+      const dateA = new Date(a.datum);
+      const dateB = new Date(b.datum);
+      if (dateA < dateB) return -1;
+      if (dateA > dateB) return 1;
+
+      // Dann nach Beginnzeit sortieren
+      const timeA = new Date(`1970-01-01T${a.beginn}`);
+      const timeB = new Date(`1970-01-01T${b.beginn}`);
+      return timeA - timeB;
+    });
+  }, [filteredEntries]);
+
+  // Gruppiere die SORIERTEN Einträge nach Datum
+  const groupedEntries = sortedEntries.reduce((acc, entry) => {
     const dateStr = entry.datum; // Datum ist bereits YYYY-MM-DD durch Backend/Modal
     if (!acc[dateStr]) {
       acc[dateStr] = [];
@@ -164,17 +214,59 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
     return acc;
   }, {});
 
+  // Generiere Monatstage (neu hier, da es im displayedDays useMemo verwendet wird)
+  const monthDays = useMemo(() => {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+
+    const days = [];
+    for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
+      days.push(new Date(date));
+    }
+    return days;
+  }, []); // Leeres Array als Abhängigkeit, wird nur einmal berechnet
+
+  // Ermittle die Tage, die angezeigt werden sollen, basierend auf den Filtern
+  const displayedDays = useMemo(() => {
+    const hasDateFilter = filters.datum !== undefined && filters.datum !== null && filters.datum !== '';
+    const hasOtherFilters = Object.keys(filters).some(key => key !== 'datum' && filters[key] !== undefined && filters[key] !== null && filters[key] !== '');
+
+    if (!hasDateFilter && !hasOtherFilters) {
+      // Szenario 1: Keine Filter gesetzt. Zeige alle Tage des Monats an.
+      return monthDays;
+    } else if (hasDateFilter && !hasOtherFilters) {
+      // Szenario 2: Nur Datumsfilter gesetzt. Zeige diesen Tag an (auch wenn er leer ist).
+      const filterDate = new Date(filters.datum);
+      return isNaN(filterDate.getTime()) ? [] : [filterDate];
+    } else { // hasOtherFilters ist true (Szenario 3a oder 3b)
+      // Szenarien 3a/3b: Andere Filter sind aktiv (mit oder ohne Datum)
+      // Zeige nur Tage, die nach der Filterung Einträge haben.
+      return Object.keys(groupedEntries).map(dateStr => new Date(dateStr));
+    }
+  }, [filters, groupedEntries, monthDays]);
+
+  // Sortiere die anzuzeigenden Tage chronologisch
+  displayedDays.sort((a, b) => a.getTime() - b.getTime());
+
   return (
     <div className="w-full">
       <div className="mb-4">
         <h2 className="text-xl font-bold">Zeitmatrix</h2>
       </div>
+      {/* Statistik Gesamtarbeitszeit */}
+      <div className="mb-4 text-lg font-semibold text-left">
+        Gesamtarbeitszeit: {calculateTotalWorkTime(entries)}
+      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
-              <th className={cdTableHeaderClasses}>Mitarbeiter</th>
               <th className={cdTableHeaderClasses}>Datum</th>
+              <th className={cdTableHeaderClasses}>Mitarbeiter</th>
               <th className={cdTableHeaderClasses}>Beginn</th>
               <th className={cdTableHeaderClasses}>Ende</th>
               <th className={cdTableHeaderClasses}>Pause (min)</th>
@@ -183,7 +275,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
               <th className={cdTableHeaderClasses}>Arbeitsort</th>
               <th className={`${cdTableHeaderClasses} text-center`}>Aktionen</th>
             </tr>
-            <tr>
+            <tr className="bg-purple-100">
               <th className="border px-2 py-1"></th>
               <th className="border px-2 py-1">
                 <input
@@ -237,7 +329,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
             </tr>
           </thead>
           <tbody>
-            {monthDays.map((date) => {
+            {displayedDays.map((date) => {
               const dateStr = formatLocalDateToYYYYMMDD(date);
               const dailyEntries = groupedEntries[dateStr] || [];
               const isWeekendDay = isWeekend(date);
@@ -251,12 +343,24 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                 return timeA - timeB;
               });
 
+              const hasDateFilter = filters.datum !== undefined && filters.datum !== null && filters.datum !== '';
+              const hasOtherFilters = Object.keys(filters).some(key => key !== 'datum' && filters[key] !== undefined && filters[key] !== null && filters[key] !== '');
+
+              // Bestimme, ob die Zeile für Tage ohne Einträge angezeigt werden soll
+              // Dies ist der Fall, wenn keine Einträge für den Tag vorhanden sind
+              // UND (kein Filter gesetzt ist ODER nur der Datumsfilter gesetzt ist)
+              const showEmptyRow = dailyEntries.length === 0 && (!hasOtherFilters && (!hasDateFilter || (hasDateFilter && formatLocalDateToYYYYMMDD(date) === filters.datum)));
+
+              // Nur rendern, wenn Einträge vorhanden sind ODER die leere Zeile angezeigt werden soll
+              if (dailyEntries.length === 0 && !showEmptyRow) {
+                  return null; // Tag ohne Einträge bei anderen Filtern ausblenden
+              }
+
               return (
                 <React.Fragment key={dateStr}>
                   {dailyEntries.length > 0 ? (
                     dailyEntries.map((entry, index) => (
                       <tr key={`${dateStr}-${index}`} className={`${rowClasses} ${index === 0 ? 'border-t' : ''}`}>
-                        <td className="border px-2 py-1">{entry.mitarbeiter}</td>
                         <td className="border px-2 py-1">
                           {index === 0 && (
                             <div className="flex flex-col">
@@ -265,6 +369,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                             </div>
                           )}
                         </td>
+                        <td className="border px-2 py-1">{entry.mitarbeiter}</td>
                         <td className="border px-2 py-1">{entry.beginn}</td>
                         <td className="border px-2 py-1">{entry.ende}</td>
                         <td className="border px-2 py-1">{entry.pause}</td>
@@ -347,19 +452,28 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                   ) : (
                     // Zeile für Tage ohne Einträge
                     <tr key={dateStr} className={rowClasses}>
-                      <td className="border px-2 py-1">-</td> {/* Mitarbeiter Spalte leer */}
+                      {/* Datum Spalte */}
                       <td className="border px-2 py-1">
                         <div className="flex flex-col">
                           <div>{date.getDate()}.{date.getMonth() + 1}.{date.getFullYear()}</div>
                           <div className="text-xs text-gray-600">{getWeekday(date)}</div>
                         </div>
                       </td>
+                      {/* Mitarbeiter Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Beginn Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Ende Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Pause Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Arbeitszeit Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Projekt Spalte */}
                       <td className="border px-2 py-1">-</td>
+                      {/* Arbeitsort Spalte */}
+                      <td className="border px-2 py-1">-</td>
+                      {/* Aktionen Spalte */}
                       <td className="border px-2 py-1 text-center">
                         <button
                           className={cdNewEntryButtonClasses}
@@ -373,12 +487,6 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                 </React.Fragment>
               );
             })}
-            {/* Statistik als letzte Zeile */}
-            <tr className="bg-gray-50 font-semibold">
-              <td colSpan={9} className="border px-2 py-1 text-left">
-                Gesamtarbeitszeit: {calculateTotalWorkTime(entries)}
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>

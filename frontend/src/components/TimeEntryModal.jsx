@@ -8,38 +8,62 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
     beginn: "",
     ende: "",
     pause: "",
-    projekt: [], // Jetzt ein Array
+    projekt: "", // Jetzt ein String für einzelne Auswahl
     arbeitsort: arbeitsorte[0],
+    beschreibung: "",
   });
+  const [errors, setErrors] = useState([]);
 
   // Formular mit initialen Daten füllen, wenn Modal geöffnet wird oder initialData sich ändert
   useEffect(() => {
-    if (isOpen && initialData) {
-      // Stelle sicher, dass projekt ein Array ist
-      const projektArray = Array.isArray(initialData.projekt) ? initialData.projekt : [initialData.projekt];
-      setForm({ ...initialData, projekt: projektArray });
-    } else if (isOpen && !initialData) {
-      // Formular zurücksetzen, wenn neues Modal geöffnet wird
+    if (isOpen) {
+      // Setze das Formular immer auf den leeren Standardzustand zuerst
+      const defaultForm = {
+        datum: "",
+        beginn: "",
+        ende: "",
+        pause: "",
+        projekt: "",
+        arbeitsort: arbeitsorte[0],
+        beschreibung: "",
+      };
+
+      if (initialData) {
+        // Wenn initialData vorhanden ist, überschreibe die Standardwerte
+        // Stellen Sie sicher, dass projekt ein String ist (erstes Element des Arrays oder leer)
+        const projectString = Array.isArray(initialData.projekt) && initialData.projekt.length > 0 ? initialData.projekt[0] : initialData.projekt || "";
+        setForm({ ...defaultForm, ...initialData, projekt: projectString });
+      } else {
+         // Wenn kein initialData vorhanden ist, einfach den leeren Standardzustand verwenden
+         setForm(defaultForm);
+      }
+    } else {
+      // Wenn Modal geschlossen ist, setzen Sie das Formular auf den leeren Zustand zurück
       setForm({
         datum: "",
         beginn: "",
         ende: "",
         pause: "",
-        projekt: [], // Leeres Array für neue Einträge
+        projekt: "",
         arbeitsort: arbeitsorte[0],
+        beschreibung: "",
       });
     }
-  }, [isOpen, initialData]);
+    
+    // Fehler zurücksetzen, wenn Modal geöffnet/geschlossen wird oder initialData sich ändert
+    setErrors([]);
+
+  }, [isOpen, initialData]); // Abhängigkeiten: Trigger bei Änderung von isOpen oder initialData
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Neue Funktion für die Mehrfachauswahl von Projekten
+  // Funktion für die einfache Auswahl eines Projekts
   const handleProjectChange = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setForm(prev => ({ ...prev, projekt: selectedOptions }));
+    const selectedProject = e.target.value;
+    setForm(prev => ({ ...prev, projekt: selectedProject }));
   };
 
   const handleSubmit = (e) => {
@@ -79,14 +103,19 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
          alert("Pause (min) muss eine positive Zahl sein.");
          return;
     }
-     // Überprüfen, ob mindestens ein Projekt ausgewählt ist (wenn required)
-    if (form.projekt.length === 0) {
-         alert("Bitte mindestens ein Projekt auswählen.");
+     // Überprüfen, ob ein Projekt ausgewählt ist
+    if (!form.projekt) {
+         alert("Bitte ein Projekt auswählen.");
          return;
     }
 
-    // Beim Speichern die ID mitgeben, wenn vorhanden (Bearbeiten)
-    onSave(initialData ? { ...form, id: initialData.id } : form);
+    // Beim Speichern das Projekt als Array speichern, da Backend-API das erwartet
+    // Stellen Sie sicher, dass die ID beim Bearbeiten korrekt übergeben wird
+    const dataToSave = { ...form, projekt: [form.projekt] };
+    if (initialData && initialData.id) {
+        dataToSave.id = initialData.id; // Füge die ID explizit hinzu, wenn initialData und initialData.id vorhanden sind
+    }
+    onSave(dataToSave);
   };
 
   if (!isOpen) return null;
@@ -102,6 +131,15 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
+        {errors.length > 0 && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <ul className="list-disc list-inside">
+              {errors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="date"
@@ -137,28 +175,25 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
             min="0"
             className="w-full border px-2 py-1 rounded"
           />
-          {/* Projekt Mehrfachauswahl */}
+          {/* Projekt Einzelauswahl */}
           <select
             name="projekt"
             value={form.projekt}
             onChange={handleProjectChange}
             required
-            multiple
-            className="w-full border px-2 py-1 rounded h-32"
+            className="w-full border px-2 py-1 rounded"
           >
+            <option value="">Bitte Projekt wählen</option>
             {availableProjekte && availableProjekte.length > 0 ? (
               availableProjekte.map((projekt) => (
                 <option key={projekt} value={projekt}>
-                  {projekt || "Bitte Projekt wählen"}
+                  {projekt}
                 </option>
               ))
             ) : (
               <option value="">Lade Projekte...</option>
             )}
           </select>
-          <div className="text-xs text-gray-500">
-            Halten Sie die Strg-Taste (Windows) oder die Cmd-Taste (Mac) gedrückt, um mehrere Projekte auszuwählen.
-          </div>
           <select
             name="arbeitsort"
             value={form.arbeitsort}

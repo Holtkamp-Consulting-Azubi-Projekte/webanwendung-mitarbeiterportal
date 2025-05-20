@@ -1,56 +1,70 @@
 [
   {
-    "mitarbeiter": "Marco",
-    "datum": "2025-05-12",
+    "datum": "2025-05-19",
     "beginn": "08:30",
-    "ende": "17:00",
-    "pause": "30",
-    "projekt": [
-      "SAP Administration (Kunde: Winkelmann AG)"
-    ],
-    "arbeitsort": "Büro",
-    "id": "1747638411362"
-  },
-  {
-    "mitarbeiter": "Marco",
-    "datum": "2025-05-13",
-    "beginn": "08:30",
-    "ende": "17:00",
-    "pause": "30",
+    "ende": "15:00",
+    "pause": "15",
     "projekt": [
       "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
     ],
     "arbeitsort": "Büro",
-    "id": "1747638438515"
+    "beschreibung": "",
+    "mitarbeiter": "Marco",
+    "id": "1747666446843"
   },
   {
-    "mitarbeiter": "Marco",
-    "datum": "2025-05-14",
-    "beginn": "08:30",
+    "datum": "2025-05-19",
+    "beginn": "15:00",
     "ende": "17:00",
-    "pause": "30",
+    "pause": "15",
     "projekt": [
       "SAP Administration (Kunde: Winkelmann AG)"
     ],
     "arbeitsort": "Büro",
-    "id": "1747638462795"
+    "beschreibung": "",
+    "mitarbeiter": "Marco",
+    "id": "1747666470634"
   },
   {
-    "mitarbeiter": "Marco",
-    "datum": "2025-05-15",
+    "datum": "2025-05-20",
     "beginn": "08:30",
-    "ende": "17:00",
-    "pause": "30",
+    "ende": "14:00",
+    "pause": "10",
     "projekt": [
-      "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
-      "SAP Administration (Kunde: Winkelmann AG)",
-      "Data Vault (Kunde: APO Bank)"
+      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
     ],
     "arbeitsort": "Büro",
-    "id": "1747638571704"
+    "beschreibung": "",
+    "mitarbeiter": "Marco",
+    "id": "1747730896524"
   },
   {
+    "datum": "2025-05-20",
+    "beginn": "08:30",
+    "ende": "14:00",
+    "pause": "10",
+    "projekt": [
+      "SAP Administration (Kunde: Winkelmann AG)"
+    ],
+    "arbeitsort": "Büro",
+    "beschreibung": "",
     "mitarbeiter": "Marco",
+    "id": "1747730921910"
+  },
+  {
+    "datum": "2025-05-20",
+    "beginn": "10:00",
+    "ende": "12:00",
+    "pause": "10",
+    "projekt": [
+      "Treasor (Kunde: Agentur für Arbeit)"
+    ],
+    "arbeitsort": "Büro",
+    "beschreibung": "",
+    "mitarbeiter": "Marco",
+    "id": "1747730942293"
+  },
+  {
     "datum": "2025-05-16",
     "beginn": "07:30",
     "ende": "16:00",
@@ -59,79 +73,8 @@
       "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
     ],
     "arbeitsort": "Homeoffice",
-    "id": "1747638623519"
-  },
-  {
+    "beschreibung": "",
     "mitarbeiter": "Marco",
-    "datum": "2025-05-19",
-    "beginn": "08:30",
-    "ende": "",
-    "pause": "",
-    "projekt": [
-      "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
-      "SAP Administration (Kunde: Winkelmann AG)"
-    ],
-    "arbeitsort": "Büro",
-    "id": "1747638646392"
-  },
-  {
-    "datum": "2025-05-09",
-    "beginn": "07:30",
-    "ende": "16:00",
-    "pause": "30",
-    "projekt": [
-      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
-    ],
-    "arbeitsort": "Homeoffice",
-    "mitarbeiter": "Marco",
-    "id": "1747649201700"
-  },
-  {
-    "datum": "2025-05-08",
-    "beginn": "08:30",
-    "ende": "14:00",
-    "pause": "30",
-    "projekt": [
-      "SAP Administration (Kunde: Winkelmann AG)"
-    ],
-    "arbeitsort": "Büro",
-    "mitarbeiter": "Marco",
-    "id": "1747650661416"
-  },
-  {
-    "datum": "2025-05-08",
-    "beginn": "14:00",
-    "ende": "17:00",
-    "pause": "",
-    "projekt": [
-      "Mitarbeiterportal (Kunde: Holtkamp Consulting)"
-    ],
-    "arbeitsort": "Büro",
-    "mitarbeiter": "Marco",
-    "id": "1747650707948"
-  },
-  {
-    "datum": "2025-05-09",
-    "beginn": "08:00",
-    "ende": "10:00",
-    "pause": "",
-    "projekt": [
-      "SAP Administration (Kunde: Winkelmann AG)"
-    ],
-    "arbeitsort": "Homeoffice",
-    "mitarbeiter": "Marco",
-    "id": "1747650824124"
-  },
-  {
-    "datum": "2025-05-09",
-    "beginn": "13:00",
-    "ende": "17:00",
-    "pause": "",
-    "projekt": [
-      "SAP Administration (Kunde: Winkelmann AG)"
-    ],
-    "arbeitsort": "Büro",
-    "mitarbeiter": "Marco",
-    "id": "1747650858733"
+    "id": "1747731443373"
   }
 ]
