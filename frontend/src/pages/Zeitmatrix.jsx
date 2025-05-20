@@ -198,22 +198,25 @@ export default function Zeitmatrix() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 flex flex-col h-screen">
       {/* <h1 className="text-2xl font-bold text-primary mb-6">⌛️ Zeitmatrix</h1> */}
+      {/* Der Inhalt dieses Containers soll den verfügbaren Platz ausfüllen und scrollbar sein */}
       {loading ? (
-        <div>Lade Einträge...</div>
+        <div className="flex-grow flex items-center justify-center">Lade Einträge...</div>
       ) : error ? (
-        <div className="text-red-600">{error}</div>
+        <div className="text-red-600 flex-grow">{error}</div>
       ) : (
-        <TimeMatrixTable
-          entries={sortedEntries}
-          onAddClick={handleAddClick}
-          onEditClick={handleEditClick}
-          onDeleteClick={handleDeleteClick}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          availableProjekte={availableProjekte}
-        />
+        <div className="flex-grow overflow-y-auto">
+          <TimeMatrixTable
+            entries={sortedEntries}
+            onAddClick={handleAddClick}
+            onEditClick={handleEditClick}
+            onDeleteClick={handleDeleteClick}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            availableProjekte={availableProjekte}
+          />
+        </div>
       )}
       <TimeEntryModal
         isOpen={modalOpen}

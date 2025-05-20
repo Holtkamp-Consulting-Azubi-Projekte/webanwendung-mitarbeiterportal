@@ -12,21 +12,24 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
 
   const [openDropdownId, setOpenDropdownId] = useState(null);
 
+  // State für ausgewählten Monat und Jahr (Standard: aktueller Monat/Jahr)
+  const [selectedMonthYear, setSelectedMonthYear] = useState(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    // Prüfen, ob das aktuelle Jahr 2025 ist, sonst auf Mai 2025 setzen
+    return year === 2025 ? `${year}-${month}` : '2025-05';
+  });
+
   // Funktion zum Umschalten des Dropdowns
   const toggleDropdown = (entryId) => {
     setOpenDropdownId(openDropdownId === entryId ? null : entryId);
   };
 
-  // Funktion zur Generierung der Monatstage
-  const generateMonthDays = () => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    // Ersten Tag des Monats
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    // Letzten Tag des Monats
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+  // Funktion zur Generierung der Monatstage für das ausgewählte Jahr/Monat
+  const generateDaysForMonth = (year, month) => {
+    const firstDay = new Date(year, month - 1, 1); // Monate sind 0-basiert
+    const lastDay = new Date(year, month, 0); // Der 0te Tag des nächsten Monats ist der letzte Tag des aktuellen Monats
 
     const days = [];
     for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
@@ -34,6 +37,12 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
     }
     return days;
   };
+
+  // Generiere Monatstage für das ausgewählte Jahr/Monat
+  const monthDays = useMemo(() => {
+    const [year, month] = selectedMonthYear.split('-').map(Number);
+    return generateDaysForMonth(year, month);
+  }, [selectedMonthYear]);
 
   // Funktion zur Formatierung eines Datumsobjekts in YYYY-MM-DD (lokale Zeit)
   const formatLocalDateToYYYYMMDD = (date) => {
@@ -214,54 +223,81 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
     return acc;
   }, {});
 
-  // Generiere Monatstage (neu hier, da es im displayedDays useMemo verwendet wird)
-  const monthDays = useMemo(() => {
-    const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
-
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
-
-    const days = [];
-    for (let date = new Date(firstDay); date <= lastDay; date.setDate(date.getDate() + 1)) {
-      days.push(new Date(date));
-    }
-    return days;
-  }, []); // Leeres Array als Abhängigkeit, wird nur einmal berechnet
-
-  // Ermittle die Tage, die angezeigt werden sollen, basierend auf den Filtern
+  // Ermittle die Tage, die angezeigt werden sollen, basierend auf den Filtern und der Monatsauswahl
   const displayedDays = useMemo(() => {
     const hasDateFilter = filters.datum !== undefined && filters.datum !== null && filters.datum !== '';
-    const hasOtherFilters = Object.keys(filters).some(key => key !== 'datum' && filters[key] !== undefined && filters[key] !== null && filters[key] !== '');
+    const hasOtherFilters = Object.keys(filters).some(key => key !== 'datum' && key !== 'monthYear' && filters[key] !== undefined && filters[key] !== null && filters[key] !== '');
+    const [selectedYear, selectedMonth] = selectedMonthYear.split('-').map(Number);
 
     if (!hasDateFilter && !hasOtherFilters) {
-      // Szenario 1: Keine Filter gesetzt. Zeige alle Tage des Monats an.
+      // Szenario 1: Keine Filter gesetzt. Zeige alle Tage des AUSGEWÄHLTEN Monats an.
       return monthDays;
     } else if (hasDateFilter && !hasOtherFilters) {
-      // Szenario 2: Nur Datumsfilter gesetzt. Zeige diesen Tag an (auch wenn er leer ist).
+      // Szenario 2: Nur Datumsfilter gesetzt. Zeige diesen Tag an (auch wenn er leer ist), aber nur wenn er im ausgewählten Monat liegt.
       const filterDate = new Date(filters.datum);
-      return isNaN(filterDate.getTime()) ? [] : [filterDate];
+       if (!isNaN(filterDate.getTime()) && filterDate.getFullYear() === selectedYear && (filterDate.getMonth() + 1) === selectedMonth) {
+         return [filterDate];
+       } else {
+         return []; // Datum liegt nicht im ausgewählten Monat oder ist ungültig
+       }
     } else { // hasOtherFilters ist true (Szenario 3a oder 3b)
       // Szenarien 3a/3b: Andere Filter sind aktiv (mit oder ohne Datum)
-      // Zeige nur Tage, die nach der Filterung Einträge haben.
-      return Object.keys(groupedEntries).map(dateStr => new Date(dateStr));
+      // Zeige nur Tage, die nach der Filterung Einträge haben UND im ausgewählten Monat/Jahr liegen.
+      return Object.keys(groupedEntries)
+        .map(dateStr => new Date(dateStr))
+        .filter(date => date.getFullYear() === selectedYear && (date.getMonth() + 1) === selectedMonth)
+        .sort((a, b) => a.getTime() - b.getTime()); // Sortiere hier erneut, falls Object.keys die Reihenfolge ändert
     }
-  }, [filters, groupedEntries, monthDays]);
+  }, [filters, groupedEntries, monthDays, selectedMonthYear]);
 
-  // Sortiere die anzuzeigenden Tage chronologisch
-  displayedDays.sort((a, b) => a.getTime() - b.getTime());
+  // Sortiere die anzuzeigenden Tage chronologisch (redundant durch Filterlogik, aber sicherheitshalber)
+  // displayedDays.sort((a, b) => a.getTime() - b.getTime()); // Sortierung ist nun in der Filterlogik enthalten
+
+  // Optionen für das Monats-Dropdown (nur Jahr 2025)
+  const monthYearOptions = useMemo(() => {
+    const options = [];
+    const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+    for (let i = 0; i < 12; i++) {
+      const month = (i + 1).toString().padStart(2, '0');
+      const year = 2025;
+      options.push({ value: `${year}-${month}`, label: `${monthNames[i]} ${year}` });
+    }
+    return options;
+  }, []);
+
+  // Handler für Monats-/Jahresauswahl
+  const handleMonthYearChange = (e) => {
+    setSelectedMonthYear(e.target.value);
+    // Beim Ändern des Monats den Datumsfilter zurücksetzen, falls gesetzt
+    if (filters.datum) {
+       onFilterChange('datum', '');
+    }
+  };
 
   return (
-    <div className="w-full">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold">Zeitmatrix</h2>
+    <div className="w-full flex flex-col h-full">
+      <div className="mb-4 flex justify-between items-center">
+        {/* Monats-/Jahresauswahl Dropdown */}
+        <div className="flex items-center space-x-2">
+           <label htmlFor="monthYearSelect" className="text-gray-700 text-sm">Monat/Jahr:</label>
+           <select
+             id="monthYearSelect"
+             value={selectedMonthYear}
+             onChange={handleMonthYearChange}
+             className="px-2 py-1 text-sm border rounded"
+           >
+             {monthYearOptions.map(option => (
+               <option key={option.value} value={option.value}>{option.label}</option>
+             ))}
+           </select>
+        </div>
       </div>
       {/* Statistik Gesamtarbeitszeit */}
-      <div className="mb-4 text-lg font-semibold text-left">
-        Gesamtarbeitszeit: {calculateTotalWorkTime(entries)}
+      <div className="mb-4 text-lg font-semibold text-left sticky top-0 bg-white z-10">
+        Gesamtarbeitszeit: {calculateTotalWorkTime(sortedEntries)} {/* Gesamtarbeitszeit über sortedEntries berechnen */}
       </div>
-      <div className="overflow-x-auto">
+      {/* Tabelle Container */}
+      <div className="w-full overflow-x-auto">
         <table className="min-w-full bg-white border border-gray-200">
           <thead className="sticky top-0 bg-white z-10">
             <tr>
@@ -276,7 +312,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
               <th className={`${cdTableHeaderClasses} text-center`}>Aktionen</th>
             </tr>
             <tr className="bg-purple-100">
-              <th className="border px-2 py-1"></th>
+              <th className="border px-2 py-1"></th>{/* Platzhalter für Datum */}
               <th className="border px-2 py-1">
                 <input
                   type="date"
@@ -285,7 +321,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                   className="w-full px-1 py-0.5 text-sm border rounded"
                 />
               </th>
-              <th className="border px-2 py-1"></th>
+              <th className="border px-2 py-1"></th>{/* Platzhalter für Beginn */}
               <th className="border px-2 py-1"></th>
               <th className="border px-2 py-1"></th>
               <th className="border px-2 py-1"></th>
@@ -328,6 +364,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
               </th>
             </tr>
           </thead>
+          {/* Tabellenkörper - Scrollt innerhalb des übergeordneten Containers */}
           <tbody>
             {displayedDays.map((date) => {
               const dateStr = formatLocalDateToYYYYMMDD(date);
