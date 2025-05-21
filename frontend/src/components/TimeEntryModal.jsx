@@ -8,16 +8,16 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
     beginn: "",
     ende: "",
     pause: "",
-    projekt: "", // Jetzt ein String für einzelne Auswahl
+    projekt: "",
     arbeitsort: arbeitsorte[0],
     beschreibung: "",
+    mitarbeiter: "",
   });
   const [errors, setErrors] = useState([]);
 
   // Formular mit initialen Daten füllen, wenn Modal geöffnet wird oder initialData sich ändert
   useEffect(() => {
     if (isOpen) {
-      // Setze das Formular immer auf den leeren Standardzustand zuerst
       const defaultForm = {
         datum: "",
         beginn: "",
@@ -26,15 +26,19 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
         projekt: "",
         arbeitsort: arbeitsorte[0],
         beschreibung: "",
+        mitarbeiter: "",
       };
 
       if (initialData) {
         // Wenn initialData vorhanden ist, überschreibe die Standardwerte
-        // Stellen Sie sicher, dass projekt ein String ist (erstes Element des Arrays oder leer)
         const projectString = Array.isArray(initialData.projekt) && initialData.projekt.length > 0 ? initialData.projekt[0] : initialData.projekt || "";
-        setForm({ ...defaultForm, ...initialData, projekt: projectString });
+        setForm({ 
+          ...defaultForm, 
+          ...initialData, 
+          projekt: projectString, 
+          mitarbeiter: initialData.mitarbeiter || ""
+        });
       } else {
-         // Wenn kein initialData vorhanden ist, einfach den leeren Standardzustand verwenden
          setForm(defaultForm);
       }
     } else {
@@ -47,20 +51,19 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
         projekt: "",
         arbeitsort: arbeitsorte[0],
         beschreibung: "",
+        mitarbeiter: "",
       });
     }
     
-    // Fehler zurücksetzen, wenn Modal geöffnet/geschlossen wird oder initialData sich ändert
     setErrors([]);
 
-  }, [isOpen, initialData]); // Abhängigkeiten: Trigger bei Änderung von isOpen oder initialData
+  }, [isOpen, initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Funktion für die einfache Auswahl eines Projekts
   const handleProjectChange = (e) => {
     const selectedProject = e.target.value;
     setForm(prev => ({ ...prev, projekt: selectedProject }));
@@ -85,10 +88,7 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
       const startDate = new Date(1970, 0, 1, beginHour, beginMinute);
       const endDate = new Date(1970, 0, 1, endHour, endMinute);
 
-       // Wenn Endzeit vor Startzeit UND es ist derselbe Tag, ist es ungültig
-       // Über Mitternacht liegende Zeiten werden hier als gültig betrachtet (kann bei Bedarf angepasst werden)
        if (endDate < startDate) {
-           // Eine einfachere Prüfung, die Mitternachtsüberschreitung ignoriert:
            const beginMinutes = beginHour * 60 + beginMinute;
            const endMinutes = endHour * 60 + endMinute;
            if (endMinutes < beginMinutes) {
@@ -97,23 +97,24 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
            }
        }
     }
-    // Überprüfen der Pausenzeit
     const pauseMinutes = Number(form.pause);
     if (form.pause !== '' && (isNaN(pauseMinutes) || pauseMinutes < 0)) {
          alert("Pause (min) muss eine positive Zahl sein.");
          return;
     }
-     // Überprüfen, ob ein Projekt ausgewählt ist
     if (!form.projekt) {
          alert("Bitte ein Projekt auswählen.");
          return;
     }
+    // Überprüfen des Mitarbeiters (sollte immer vorbelegt sein)
+    if (!form.mitarbeiter) {
+        alert("Mitarbeiterinformation fehlt.");
+        return;
+    }
 
-    // Beim Speichern das Projekt als Array speichern, da Backend-API das erwartet
-    // Stellen Sie sicher, dass die ID beim Bearbeiten korrekt übergeben wird
     const dataToSave = { ...form, projekt: [form.projekt] };
     if (initialData && initialData.id) {
-        dataToSave.id = initialData.id; // Füge die ID explizit hinzu, wenn initialData und initialData.id vorhanden sind
+        dataToSave.id = initialData.id;
     }
     onSave(dataToSave);
   };
@@ -123,9 +124,8 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
   const modalTitle = initialData ? "Eintrag bearbeiten" : "Neuer Zeiteintrag";
   const saveButtonText = initialData ? "Änderungen speichern" : "Speichern";
 
-  // Corporate Design Button Klassen (angepasst für Modal)
   const cdSaveButtonClasses = "text-white bg-primary hover:bg-primary-dark focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
-  const cdCancelButtonClasses = "text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200"; // Grauer Button
+  const cdCancelButtonClasses = "text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -141,6 +141,18 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Mitarbeiter Feld (schreibgeschützt) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+            <input
+              type="text"
+              name="mitarbeiter"
+              value={form.mitarbeiter}
+              disabled
+              className="w-full border px-2 py-1 rounded bg-gray-100"
+            />
+          </div>
+
           <input
             type="date"
             name="datum"
@@ -204,6 +216,18 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
               <option key={ort} value={ort}>{ort}</option>
             ))}
           </select>
+           {/* Beschreibungsfeld */}
+           <div>
+               <label className="block text-sm font-medium text-gray-700">Beschreibung</label>
+               <textarea
+                   name="beschreibung"
+                   value={form.beschreibung}
+                   onChange={handleChange}
+                   rows="3"
+                   className="w-full border px-2 py-1 rounded"
+               ></textarea>
+           </div>
+
           <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"

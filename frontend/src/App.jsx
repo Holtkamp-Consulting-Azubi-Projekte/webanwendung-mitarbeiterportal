@@ -10,29 +10,39 @@ import Zeitmatrix from "./pages/Zeitmatrix";
 import Einstellungen from "./pages/Einstellungen";
 
 // PrivateRoute Komponente zum Schutz von Routen
-const PrivateRoute = ({ isAuthenticated, children }) => {
+const PrivateRoute = ({ children }) => {
+  const isAuthenticated = !!localStorage.getItem('access_token');
   return isAuthenticated ? children : <Navigate to="/" replace />;
 };
 
 export default function App() {
   // Initialen Authentifizierungsstatus basierend auf localStorage prüfen
-  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('access_token'));
+  // const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('access_token'));
 
   // Funktion zum Setzen des Authentifizierungsstatus und Speichern des Tokens
   const handleLoginSuccess = (token) => {
     localStorage.setItem('access_token', token);
-    setIsAuthenticated(true);
+    // setIsAuthenticated(true);
+  };
+
+  // Funktion zum Entfernen des Tokens beim Logout
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    // setIsAuthenticated(false);
   };
 
   return (
     <Routes>
       {/* Die LandingPage ist immer zugänglich */}
       <Route path="/" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
+      {/* Route für /login, die ebenfalls auf die LandingPage verweist */}
+      <Route path="/login" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
 
       {/* Geschützte Routen, die ein Layout verwenden */}
       <Route path="/app/*" element={
-        <PrivateRoute isAuthenticated={isAuthenticated}>
-          <Layout setIsAuthenticated={setIsAuthenticated}>
+        <PrivateRoute>
+          {/* Übergabe von handleLogout an Layout, damit es im Header verwendet werden kann */}
+          <Layout onLogout={handleLogout}>
             <Routes>
               {/* Untergeordnete Routen unter /app */} {/* Diese Route /app/ sollte auch das Dashboard anzeigen */}
               <Route path="/" element={<Dashboard />} />
@@ -47,8 +57,9 @@ export default function App() {
 
       {/* Spezifische Route für das Dashboard, falls es ohne /app erreichbar sein soll, auch geschützt */}
        <Route path="/dashboard" element={
-         <PrivateRoute isAuthenticated={isAuthenticated}>
-           <Layout setIsAuthenticated={setIsAuthenticated}>
+         <PrivateRoute>
+            {/* Übergabe von handleLogout an Layout */}
+           <Layout onLogout={handleLogout}>
              <Dashboard />
            </Layout>
          </PrivateRoute>

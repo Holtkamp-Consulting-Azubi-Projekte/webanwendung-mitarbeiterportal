@@ -4,7 +4,8 @@ import Footer from "./Footer";
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmationModal from './auth/LogoutConfirmationModal';
 
-export default function Layout({ children, setIsAuthenticated }) {
+// onLogout wird nun von App.jsx übergeben
+export default function Layout({ children, onLogout }) {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -15,9 +16,8 @@ export default function Layout({ children, setIsAuthenticated }) {
 
   // Funktion, die vom Modal aufgerufen wird, wenn der Benutzer bestätigt
   const handleConfirmLogout = () => {
-    // TODO: Implementiere tatsächliche Logout-Logik (z.B. Token entfernen)
+    onLogout(); // Rufe die übergebene Logout-Funktion aus App.jsx auf
     console.log('Logout bestätigt!');
-    setIsAuthenticated(false); // Authentifizierungsstatus auf false setzen
     setShowLogoutModal(false); // Modal schließen
     navigate('/'); // Weiterleitung zur LandingPage (Login/Registrierung)
   };

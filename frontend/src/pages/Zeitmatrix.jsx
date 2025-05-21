@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import TimeMatrixTable from "../components/TimeMatrixTable";
 import TimeEntryModal from "../components/TimeEntryModal";
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = "http://localhost:5050/api/time-entries/";
+const PROFILE_API_URL = "http://localhost:5050/api/profile"; // API-URL für Profil
 
-// Temporäre Liste von Projekten für Testzwecke
+// Temporäre Liste von Projekten für Testzwecke (könnte vom Backend kommen)
 const TEMPORARY_TEST_PROJEKTE = [
   '', // Option für 'Alle' / Leere Auswahl im Modal
   "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
@@ -21,20 +24,35 @@ export default function Zeitmatrix() {
   const [editingEntry, setEditingEntry] = useState(null);
   const [filters, setFilters] = useState({});
   const [newEntryInitialData, setNewEntryInitialData] = useState(null);
+  
+  // State für Benutzerprofildaten
+  const [zeitmatrixUserData, setZeitmatrixUserData] = useState(null);
+
+  const navigate = useNavigate();
 
   // Einträge vom Backend laden
   const fetchEntries = () => {
     setLoading(true);
     setError(null);
-    const token = localStorage.getItem('access_token'); // Token aus localStorage abrufen
+    const token = localStorage.getItem('access_token');
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
 
     fetch(API_URL, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+        'Authorization': `Bearer ${token}`
       }
     })
       .then((res) => {
+        if (res.status === 401) {
+           localStorage.removeItem('access_token');
+           navigate('/login');
+           throw new Error("Nicht autorisiert"); // Beende die Ausführung nach Weiterleitung
+        }
         if (!res.ok) throw new Error("Netzwerkantwort war nicht ok.");
         return res.json();
       })
@@ -44,17 +62,43 @@ export default function Zeitmatrix() {
       })
       .catch((err) => {
         console.error("Fehler beim Laden der Einträge:", err);
-        setError("Fehler beim Laden der Einträge");
+        if (err.message !== "Nicht autorisiert") {
+          setError("Fehler beim Laden der Einträge");
+        }
         setLoading(false);
       });
   };
 
+  // Benutzerprofildaten vom Backend laden
+  const fetchZeitmatrixUserData = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        // Weiterleitung erfolgt bereits in fetchEntries
+        return;
+      }
+
+      const response = await axios.get(PROFILE_API_URL, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+      setZeitmatrixUserData(response.data);
+    } catch (err) {
+      console.error('Fehler beim Laden der Benutzerdaten für Zeitmatrix:', err);
+      // Fehlerbehandlung wie in Profil.jsx kann hier integriert werden, falls nötig
+    }
+  };
+
   useEffect(() => {
     fetchEntries();
-  }, []);
+    fetchZeitmatrixUserData(); // Benutzerdaten beim Laden der Komponente abrufen
+  }, [navigate]);
 
   // Liste der verfügbaren Projekte
-  const availableProjekte = TEMPORARY_TEST_PROJEKTE;
+  const availableProjekte = TEMPORARY_TEST_PROJEKTE; // Oder später vom Backend laden
 
   // Filterlogik
   const filteredEntries = useMemo(() => {
@@ -120,7 +164,14 @@ export default function Zeitmatrix() {
 
   const handleAddClick = (initialDateData) => {
     setEditingEntry(null);
-    setNewEntryInitialData(initialDateData || null);
+    // Kombiniere initialDateData mit Benutzerprofildaten
+    const initialDataWithUser = {
+      ...initialDateData,
+      mitarbeiter: zeitmatrixUserData ? `${zeitmatrixUserData.firstName} ${zeitmatrixUserData.lastName}` : '',
+      projekt: zeitmatrixUserData ? zeitmatrixUserData.currentProject : '',
+      // Weitere Felder, die Sie vorbelegen möchten
+    };
+    setNewEntryInitialData(initialDataWithUser);
     setModalOpen(true);
   };
 
@@ -138,8 +189,8 @@ export default function Zeitmatrix() {
 
   const handleSaveEntry = (entryData) => {
     if (!editingEntry) {
-      // Beim Hinzufügen: Mitarbeiter festlegen (kann später durch Login ersetzt werden)
-      entryData.mitarbeiter = "Marco";
+      // Beim Hinzufügen: Mitarbeiter festlegen (wird jetzt im handleAddClick gemacht)
+      // entryData.mitarbeiter = "Marco";
     }
 
     let method;
@@ -183,9 +234,10 @@ export default function Zeitmatrix() {
       .catch((err) => {
         console.error("Fehler beim Speichern/Aktualisieren des Eintrags:", err);
         setError(err.message);
-        if (!err.message.includes("Validierungsfehler")) {
-          setModalOpen(false);
-          setEditingEntry(null);
+        // Das Modal nur schließen, wenn es kein Validierungsfehler vom Backend ist
+        if (err.message && !err.message.includes("Validierungsfehler")) {
+           setModalOpen(false);
+           setEditingEntry(null);
         }
       });
   };
@@ -197,7 +249,7 @@ export default function Zeitmatrix() {
       fetch(`${API_URL}${entryId}`, {
         method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+          'Authorization': `Bearer ${token}`
         }
       })
         .then((res) => {
