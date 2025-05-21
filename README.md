@@ -11,8 +11,9 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 ### 🔧 Backend (Flask)
 - Python 3.10+
 - Flask + flask-cors
+- Flask-JWT-Extended
 - PostgreSQL (via psycopg2)
-- JSON-Dateien für Sessions und Logs (`users.json`, `session.json`, `logs.json`)
+- JSON-Dateien für Benutzer und Logs (`users.json`, `logs.json`)
 - PDF-Erstellung über ReportLab (für Wochenberichte)
 
 ### 🎨 Frontend (React)
@@ -53,7 +54,7 @@ webanwendung-mitarbeiterportal/
 
 ### 🔐 Benutzerverwaltung
 - [x] Registrierung mit Passwort-Hashing
-- [x] Login mit Sessions (`session.json`)
+- [x] Login mit JWT (JSON Web Token)
 - [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.)
 
 ### 🕒 Zeiterfassung
@@ -73,10 +74,10 @@ webanwendung-mitarbeiterportal/
 
 ## 🧪 API-Endpunkte (Auswahl)
 
-| Methode | Endpoint               | Beschreibung                     |
-|---------|------------------------|----------------------------------|
-| POST    | `/api/login`           | Login mit Benutzername/Passwort |
-| POST    | `/api/register`        | Neue Registrierung               |
+| Methode | Endpoint               | Beschreibung                          |
+|---------|------------------------|---------------------------------------|
+| POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück |
+| POST    | `/api/register`        | Neue Registrierung                    |
 | GET     | `/api/session`         | Aktuelle Session abfragen        |
 | GET     | `/api/projects`        | Alle Projekte abrufen            |
 | POST    | `/api/time/start`      | Startzeit erfassen               |
