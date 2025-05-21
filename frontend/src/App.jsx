@@ -15,15 +15,22 @@ const PrivateRoute = ({ isAuthenticated, children }) => {
 };
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Zustand für die Authentifizierung
+  // Initialen Authentifizierungsstatus basierend auf localStorage prüfen
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('access_token'));
+
+  // Funktion zum Setzen des Authentifizierungsstatus und Speichern des Tokens
+  const handleLoginSuccess = (token) => {
+    localStorage.setItem('access_token', token);
+    setIsAuthenticated(true);
+  };
 
   return (
     <Routes>
       {/* Die LandingPage ist immer zugänglich */}
-      <Route path="/" element={<LandingPage setIsAuthenticated={setIsAuthenticated} />} />
+      <Route path="/" element={<LandingPage onLoginSuccess={handleLoginSuccess} />} />
 
       {/* Geschützte Routen, die ein Layout verwenden */}
-      <Route path="/app" element={
+      <Route path="/app/*" element={
         <PrivateRoute isAuthenticated={isAuthenticated}>
           <Layout setIsAuthenticated={setIsAuthenticated}>
             <Routes>

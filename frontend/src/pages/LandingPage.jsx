@@ -2,7 +2,7 @@ import React from 'react';
 import AuthModal from '../components/auth/AuthModal';
 import logo from '../assets/logo.png';
 
-const LandingPage = ({ setIsAuthenticated }) => {
+const LandingPage = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary to-white">
       {/* Vereinfachter Header */}
@@ -34,7 +34,7 @@ const LandingPage = ({ setIsAuthenticated }) => {
       <AuthModal
         isOpen={true}
         onClose={() => {}} // Leere Funktion, da das Modal nicht geschlossen werden soll
-        setIsAuthenticated={setIsAuthenticated} // setIsAuthenticated-Prop weitergeben
+        onLoginSuccess={onLoginSuccess} // onLoginSuccess-Prop weitergeben
       />
     </div>
   );

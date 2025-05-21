@@ -26,7 +26,14 @@ export default function Zeitmatrix() {
   const fetchEntries = () => {
     setLoading(true);
     setError(null);
-    fetch(API_URL)
+    const token = localStorage.getItem('access_token'); // Token aus localStorage abrufen
+
+    fetch(API_URL, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+      }
+    })
       .then((res) => {
         if (!res.ok) throw new Error("Netzwerkantwort war nicht ok.");
         return res.json();
@@ -149,9 +156,14 @@ export default function Zeitmatrix() {
       url = API_URL; // Basis-URL für POST
     }
 
+    const token = localStorage.getItem('access_token'); // Token aus localStorage abrufen
+
     fetch(url, {
       method: method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+      },
       body: JSON.stringify(entryData),
     })
       .then((res) => {
@@ -180,8 +192,13 @@ export default function Zeitmatrix() {
 
   const handleDeleteClick = (entryId) => {
     if (window.confirm("Soll dieser Eintrag wirklich gelöscht werden?")) {
+      const token = localStorage.getItem('access_token'); // Token aus localStorage abrufen
+
       fetch(`${API_URL}${entryId}`, {
         method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+        }
       })
         .then((res) => {
           if (!res.ok) throw new Error("Fehler beim Löschen");

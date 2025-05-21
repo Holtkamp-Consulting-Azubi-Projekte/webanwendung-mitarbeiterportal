@@ -15,7 +15,7 @@ export default function Header({ onLogout }) {
         {/* Navigation */}
         <nav className="hidden md:flex gap-10 text-sm text-base font-medium tracking-wide">
           <NavLink
-            to="/dashboard"
+            to="/app/dashboard"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }
@@ -23,7 +23,7 @@ export default function Header({ onLogout }) {
             Dashboard
           </NavLink>
           <NavLink
-            to="/projekte"
+            to="/app/projekte"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }
@@ -31,7 +31,7 @@ export default function Header({ onLogout }) {
             Projekte
           </NavLink>
           <NavLink
-            to="/zeitmatrix"
+            to="/app/zeitmatrix"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }
@@ -39,7 +39,7 @@ export default function Header({ onLogout }) {
             Zeitmatrix
           </NavLink>
           <NavLink
-            to="/profil"
+            to="/app/profil"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }
@@ -47,7 +47,7 @@ export default function Header({ onLogout }) {
             Profil
           </NavLink>
           <NavLink
-            to="/einstellungen"
+            to="/app/einstellungen"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }

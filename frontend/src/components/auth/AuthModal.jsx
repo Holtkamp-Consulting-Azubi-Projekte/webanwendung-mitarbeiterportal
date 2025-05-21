@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const AuthModal = ({ isOpen, onClose, setIsAuthenticated }) => {
+const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -36,11 +36,11 @@ const AuthModal = ({ isOpen, onClose, setIsAuthenticated }) => {
 
         if (response.ok) {
           setError('');
-          localStorage.setItem('access_token', data.access_token);
+          const token = data.access_token;
+          onLoginSuccess(token);
           setTimeout(() => {
             setSuccess(data.message);
-            setIsAuthenticated(true);
-            navigate('/dashboard');
+            navigate('/app');
           }, 50);
         } else {
           setError(data.message);
