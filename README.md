@@ -57,6 +57,8 @@ webanwendung-mitarbeiterportal/
 - [x] Login mit JWT (JSON Web Token)
 - [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.)
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
+- [x] Geschützte Routen mit PrivateRoute-Komponente
+- [x] AuthModal für Login/Registrierung auf der LandingPage
 
 ### 🕒 Zeiterfassung
 - [x] Zeitstempeln (Start/Ende)
@@ -68,6 +70,8 @@ webanwendung-mitarbeiterportal/
 - [x] Gesamtarbeitszeit über der Tabelle platziert
 - [x] Filterzeile farblich hervorgehoben
 - [x] Monats-/Jahresauswahl (Dropdown für 2025)
+- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [x] Integration der Zeitmatrix in das Hauptlayout
 
 ### 📁 Projektverwaltung
 - [x] Projekte anlegen, bearbeiten, löschen
