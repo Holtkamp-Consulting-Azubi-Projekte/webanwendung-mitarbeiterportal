@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./Button";
 
-export default function Header() {
+export default function Header({ onLogout }) {
   return (
     <header className="fixed top-0 w-full z-50 bg-secondary shadow border-b-2 border-primary">
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-4">
@@ -15,7 +15,7 @@ export default function Header() {
         {/* Navigation */}
         <nav className="hidden md:flex gap-10 text-sm text-base font-medium tracking-wide">
           <NavLink
-            to="/"
+            to="/dashboard"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }
@@ -57,7 +57,7 @@ export default function Header() {
         </nav>
 
         {/* CTA-Button */}
-        <Button>Logout</Button>
+        <Button onClick={onLogout}>Logout</Button>
       </div>
     </header>
   );

@@ -1,0 +1,10 @@
+{
+  "users": [
+    {
+      "email": "m.grochowiak@holtkamp-consulting.de",
+      "password": "scrypt:32768:8:1$eV7EvFnvzymacFx1$aa39d08fab6f76bfae8e1fa4f74b2c21db3f859501c8e86e7ff3cc9d4a11e1b6399c9288db95346f8f1a364a29a62da5bf7747d199c8d13c66bf5ab62bc1e7cf",
+      "firstName": "Marco",
+      "lastName": "Grochowiak"
+    }
+  ]
+}
