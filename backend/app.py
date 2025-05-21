@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from auth import register_user, login_user
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
+from time_matrix import time_matrix_bp  # Importiere den Zeitmatrix-Blueprint
 
 app = Flask(__name__)
 CORS(app)
@@ -9,6 +10,9 @@ CORS(app)
 # Setup the Flask-JWT-Extended extension
 app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this! In production, use a random secret from env var
 jwt = JWTManager(app)
+
+# Zeitmatrix-Blueprint registrieren
+app.register_blueprint(time_matrix_bp)
 
 @app.route("/api/ping")
 def ping():

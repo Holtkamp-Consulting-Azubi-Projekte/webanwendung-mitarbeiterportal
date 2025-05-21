@@ -63,6 +63,11 @@ webanwendung-mitarbeiterportal/
 - [x] Tages- & Wochenansicht
 - [x] PDF-Export der Wochenübersicht
 - [x] Automatischer Versand (freitags 18 Uhr, geplant)
+- [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter)
+- [x] Spaltenreihenfolge angepasst (Datum vor Mitarbeiter)
+- [x] Gesamtarbeitszeit über der Tabelle platziert
+- [x] Filterzeile farblich hervorgehoben
+- [x] Monats-/Jahresauswahl (Dropdown für 2025)
 
 ### 📁 Projektverwaltung
 - [x] Projekte anlegen, bearbeiten, löschen
