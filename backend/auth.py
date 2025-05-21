@@ -2,6 +2,7 @@ import json
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import jsonify, request
+from flask_jwt_extended import create_access_token
 
 # Pfad zur users.json
 USERS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
@@ -20,7 +21,7 @@ def save_users(users_data):
         json.dump(users_data, f, indent=2)
 
 def login_user():
-    """Authentifiziert einen Benutzer."""
+    """Authentifiziert einen Benutzer und gibt einen JWT zurück."""
     data = request.get_json()
     
     # Überprüfe, ob alle erforderlichen Felder vorhanden sind
@@ -49,14 +50,13 @@ def login_user():
             'message': 'Falscher Benutzername oder Passwort'
         }), 401
     
+    # Erstelle den JWT
+    access_token = create_access_token(identity=user['email'])
+    
     return jsonify({
         'success': True,
         'message': 'Login erfolgreich',
-        'user': {
-            'email': user['email'],
-            'firstName': user['firstName'],
-            'lastName': user['lastName']
-        }
+        'access_token': access_token
     }), 200
 
 def register_user():
