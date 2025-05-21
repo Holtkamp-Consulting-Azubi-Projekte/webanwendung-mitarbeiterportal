@@ -13,7 +13,7 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 - Flask + flask-cors
 - Flask-JWT-Extended
 - PostgreSQL (via psycopg2)
-- JSON-Dateien für Benutzer und Logs (`users.json`, `logs.json`)
+- JSON-Dateien für Benutzer (`users.json`) und Protokolle von Authentifizierungsereignissen (`logs.json`)
 - PDF-Erstellung über ReportLab (für Wochenberichte)
 
 ### 🎨 Frontend (React)
@@ -56,6 +56,7 @@ webanwendung-mitarbeiterportal/
 - [x] Registrierung mit Passwort-Hashing
 - [x] Login mit JWT (JSON Web Token)
 - [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.)
+- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
 
 ### 🕒 Zeiterfassung
 - [x] Zeitstempeln (Start/Ende)
