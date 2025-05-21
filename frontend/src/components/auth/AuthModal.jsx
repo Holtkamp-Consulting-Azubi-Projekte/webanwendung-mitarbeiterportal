@@ -36,6 +36,7 @@ const AuthModal = ({ isOpen, onClose, setIsAuthenticated }) => {
 
         if (response.ok) {
           setError('');
+          localStorage.setItem('access_token', data.access_token);
           setTimeout(() => {
             setSuccess(data.message);
             setIsAuthenticated(true);

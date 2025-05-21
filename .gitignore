@@ -45,3 +45,9 @@ docker-compose.override.yml
 *.bak
 *.zip
 *.tar.gz
+
+# Dependency directories
+data/
+
+# macOS files
+.DS_Store
