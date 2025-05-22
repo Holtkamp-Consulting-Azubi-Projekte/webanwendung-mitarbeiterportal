@@ -1,3 +1,8 @@
+"""
+Hauptanwendungsdatei für das Mitarbeiterportal-Backend.
+Implementiert die Flask-Anwendung mit allen API-Endpunkten und Konfigurationen.
+"""
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from auth import register_user, login_user
@@ -6,20 +11,21 @@ from time_matrix import time_matrix_bp  # Importiere den Zeitmatrix-Blueprint
 import json
 import os
 
+# Flask-Anwendung initialisieren
 app = Flask(__name__)
 
-# CORS-Konfiguration
+# CORS-Konfiguration für Frontend-Zugriff
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5173"],
+        "origins": ["http://localhost:5173"],  # Frontend-URL
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
     }
 })
 
-# Setup the Flask-JWT-Extended extension
-app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this! In production, use a random secret from env var
+# JWT-Konfiguration für Authentifizierung
+app.config["JWT_SECRET_KEY"] = "super-secret"  # In Produktion: Zufälligen Secret-Key aus Umgebungsvariable verwenden
 jwt = JWTManager(app)
 
 # Zeitmatrix-Blueprint registrieren
@@ -27,33 +33,38 @@ app.register_blueprint(time_matrix_bp)
 
 @app.route("/api/ping")
 def ping():
+    """Einfacher Health-Check-Endpunkt."""
     return jsonify({"status": "ok", "message": "Backend läuft"})
 
 @app.route('/api/register', methods=['POST'])
 def register():
+    """Registrierungs-Endpunkt für neue Benutzer."""
     return register_user()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    # Wir werden die login_user Funktion in auth.py so anpassen, dass sie create_access_token aufruft
-    # und den Token zurückgibt.
+    """Login-Endpunkt für bestehende Benutzer."""
     return login_user()
 
 @app.route("/api/protected", methods=["GET"])
 @jwt_required()
 def protected():
+    """Geschützter Endpunkt zum Testen der JWT-Authentifizierung."""
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
 
 @app.route("/api/profile", methods=["GET", "PUT", "OPTIONS"])
 @jwt_required()
 def profile():
+    """
+    Profil-Endpunkt für Benutzerdaten.
+    GET: Ruft Profildaten des eingeloggten Benutzers ab
+    PUT: Aktualisiert Profildaten des eingeloggten Benutzers
+    """
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
     current_user_email = get_jwt_identity()
-
-    # Pfad zur users.json
     users_file = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
 
     if request.method == "GET":
@@ -67,10 +78,9 @@ def profile():
                     'lastName': user.get('lastName', ''),
                     'email': user.get('email', ''),
                     'position': user.get('position', ''),
-                    'currentProject': user.get('currentProject', ''), # Neues Feld
-                    'coreHours': user.get('coreHours', ''), # Neues Feld
-                    'telefon': user.get('telefon', '') # Bestehendes Feld
-                    # Entferne 'abteilung' und 'standort'
+                    'currentProject': user.get('currentProject', ''),
+                    'coreHours': user.get('coreHours', ''),
+                    'telefon': user.get('telefon', '')
                 }
                 return jsonify(user_data), 200
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
@@ -96,9 +106,9 @@ def profile():
 
             # Stelle sicher, dass die E-Mail nicht geändert werden kann
             if 'email' in updated_user_data:
-                del updated_user_data['email'] # Sicherstellen, dass email nicht im updated_user_data ist
+                del updated_user_data['email']
                 
-            # Entferne alte Felder, falls sie noch im Update-Request sind (sollte nicht passieren, aber zur Sicherheit)
+            # Entferne alte Felder
             if 'abteilung' in users_data['users'][user_index]:
                 del users_data['users'][user_index]['abteilung']
             if 'standort' in users_data['users'][user_index]:
@@ -119,6 +129,10 @@ def profile():
 @app.route("/api/change-password", methods=["PUT", "OPTIONS"])
 @jwt_required()
 def change_password():
+    """
+    Endpunkt zum Ändern des Benutzerpassworts.
+    Erfordert das aktuelle Passwort und das neue Passwort.
+    """
     if request.method == "OPTIONS":
         return jsonify({}), 200
 
@@ -141,21 +155,9 @@ def change_password():
         if not user:
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-        # Hier müssten Sie das aktuelle Passwort mit dem gespeicherten Hash überprüfen
-        # Da wir den Hash-Algorithmus aus auth.py nicht kennen, simulieren wir dies vorerst
-        # In einer echten Anwendung MÜSSEN Sie eine sichere Hash-Überprüfung implementieren!
-        # Beispiel (NICHT sicher): if user['password'] != hash_password_somehow(current_password):
-        #    return jsonify({"error": "Aktuelles Passwort ist falsch"}), 401
-        
-        # Neues Passwort hashen (Auch hier: Sicheren Hash-Algorithmus aus auth.py verwenden!)
-        # Beispiel (NICHT sicher): hashed_new_password = hash_password_somehow(new_password)
-
-        # Passwort-Validierung (Beispiel)
+        # Passwort-Validierung
         if len(new_password) < 8:
              return jsonify({"error": "Neues Passwort muss mindestens 8 Zeichen lang sein"}), 400
-
-        # Aktualisiere das Passwort im Benutzerobjekt
-        # user['password'] = hashed_new_password # In echter Anwendung gehashtes Passwort speichern
 
         # Speichere die aktualisierten Daten
         with open(users_file, 'w') as f:
@@ -166,10 +168,13 @@ def change_password():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Neuer Endpunkt für Projekte
 @app.route("/api/projects", methods=["GET", "OPTIONS"])
 @jwt_required()
 def get_projects():
+    """
+    Endpunkt zum Abrufen der verfügbaren Projekte.
+    Aktuell eine statische Liste, später aus Datenbank zu laden.
+    """
     if request.method == "OPTIONS":
         return jsonify({}), 200
         

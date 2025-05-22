@@ -1,3 +1,8 @@
+"""
+Authentifizierungsmodul für das Mitarbeiterportal.
+Implementiert Benutzerregistrierung, Login und Passwort-Hashing.
+"""
+
 import json
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,7 +14,10 @@ from log import log_event
 USERS_FILE = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
 
 def load_users():
-    """Lädt die Benutzerdaten aus der JSON-Datei."""
+    """
+    Lädt die Benutzerdaten aus der JSON-Datei.
+    Gibt ein Dictionary mit einer leeren Benutzerliste zurück, falls die Datei nicht existiert oder leer ist.
+    """
     print(f"Versuche Benutzerdaten aus {USERS_FILE} zu laden...")
     if not os.path.exists(USERS_FILE):
         print(f"Datei {USERS_FILE} existiert nicht")
@@ -17,7 +25,6 @@ def load_users():
     
     try:
         with open(USERS_FILE, 'r') as f:
-            # Read content to handle empty file case specifically
             content = f.read()
             print(f"Gelesener Inhalt: {content}")
             if not content or content.strip() == "{}":
@@ -34,10 +41,12 @@ def load_users():
         return {"users": []}
 
 def save_users(users_data):
-    """Speichert die Benutzerdaten in der JSON-Datei."""
+    """
+    Speichert die Benutzerdaten in der JSON-Datei.
+    Erstellt das Verzeichnis, falls es nicht existiert.
+    """
     print(f"Versuche Benutzerdaten in {USERS_FILE} zu speichern...")
     try:
-        # Ensure the data directory exists
         data_dir = os.path.dirname(USERS_FILE)
         if not os.path.exists(data_dir):
             print(f"Erstelle Verzeichnis {data_dir}")
@@ -49,7 +58,7 @@ def save_users(users_data):
         print("Benutzerdaten erfolgreich gespeichert")
     except IOError as e:
         print(f"Fehler beim Speichern der Benutzerdaten: {e}")
-        raise  # Re-raise the exception to be caught by the caller
+        raise
 
 # Initialisiere die Benutzerdatei, falls sie nicht existiert oder leer/ungültig ist
 if not os.path.exists(USERS_FILE) or not load_users().get('users'):
@@ -57,7 +66,10 @@ if not os.path.exists(USERS_FILE) or not load_users().get('users'):
     save_users({"users": []})
 
 def login_user():
-    """Authentifiziert einen Benutzer und gibt einen JWT zurück."""
+    """
+    Authentifiziert einen Benutzer und gibt einen JWT zurück.
+    Überprüft E-Mail und Passwort gegen die gespeicherten Benutzerdaten.
+    """
     print("Login-Versuch gestartet")
     data = request.get_json()
     print(f"Empfangene Daten: {data}")
@@ -65,7 +77,6 @@ def login_user():
     # Überprüfe, ob alle erforderlichen Felder vorhanden sind
     if not all(field in data for field in ['email', 'password']):
         print("Fehlende Felder im Login-Request")
-        # Protokolliere fehlgeschlagenen Login (fehlende Felder)
         log_event('login_failed', details={'email': data.get('email'), 'reason': 'missing_fields'})
         return jsonify({
             'success': False,
@@ -83,7 +94,6 @@ def login_user():
     
     if not user:
         print("Benutzer nicht gefunden")
-        # Protokolliere fehlgeschlagenen Login (E-Mail nicht registriert)
         log_event('login_failed', details={'email': data['email'], 'reason': 'email_not_registered'})
         return jsonify({
             'success': False,
@@ -94,7 +104,6 @@ def login_user():
     print("Überprüfe Passwort...")
     if not check_password_hash(user['password'], data['password']):
         print("Falsches Passwort")
-        # Protokolliere fehlgeschlagenen Login (falsches Passwort)
         log_event('login_failed', user_id=user['email'], details={'reason': 'incorrect_password'})
         return jsonify({
             'success': False,
@@ -115,7 +124,10 @@ def login_user():
     }), 200
 
 def register_user():
-    """Registriert einen neuen Benutzer."""
+    """
+    Registriert einen neuen Benutzer.
+    Überprüft die Eingabedaten und speichert den neuen Benutzer in der users.json.
+    """
     print("Registrierungs-Versuch gestartet")
     data = request.get_json()
     print(f"Empfangene Daten: {data}")
@@ -124,7 +136,6 @@ def register_user():
     required_fields = ['email', 'password', 'firstName', 'lastName']
     if not all(field in data for field in required_fields):
         print("Fehlende Felder im Registrierungs-Request")
-        # Protokolliere fehlgeschlagene Registrierung (fehlende Felder)
         log_event('registration_failed', details={'reason': 'missing_fields', 'email': data.get('email')})
         return jsonify({
             'success': False,
@@ -139,7 +150,6 @@ def register_user():
     # Überprüfe, ob die E-Mail bereits existiert
     if any(user['email'] == data['email'] for user in users_data['users']):
         print("E-Mail bereits registriert")
-        # Protokolliere fehlgeschlagene Registrierung (E-Mail existiert bereits)
         log_event('registration_failed', details={'email': data['email'], 'reason': 'email_already_registered'})
         return jsonify({
             'success': False,

@@ -1,8 +1,14 @@
+"""
+Zeitmatrix-Modul für das Mitarbeiterportal.
+Implementiert die Verwaltung von Zeiteinträgen und die Zeitmatrix-Funktionalität.
+"""
+
 from flask import Blueprint, request, jsonify
 import os
 import json
 import time
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 import logging
 
