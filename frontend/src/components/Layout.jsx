@@ -4,7 +4,11 @@ import Footer from "./Footer";
 import { useNavigate } from 'react-router-dom';
 import LogoutConfirmationModal from './auth/LogoutConfirmationModal';
 
-// onLogout wird nun von App.jsx übergeben
+/**
+ * `Layout` Komponente für das grundlegende Seitenlayout.
+ * Enthält Header, Hauptinhalt und Footer.
+ * Wird verwendet, um eine konsistente Struktur über verschiedene Seiten hinweg bereitzustellen.
+ */
 export default function Layout({ children, onLogout }) {
   const navigate = useNavigate();
   const [showLogoutModal, setShowLogoutModal] = useState(false);

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * `AuthModal` Komponente für das Authentifizierungs-Modal (Login/Registrierung).
+ * Steuert die Anzeige zwischen Login- und Registrierungsformularen.
+ */
 const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);

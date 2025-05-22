@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 
 const arbeitsorte = ["Büro", "Homeoffice", "Kunde"];
 
+/**
+ * `TimeEntryModal` Komponente für die Erstellung und Bearbeitung von Zeiteinträgen.
+ * Wird als Modal angezeigt und ermöglicht die Eingabe von Datum, Beginn, Ende, Projekt und Mitarbeiter.
+ * Enthält Validierungslogik für Kernarbeitszeiten.
+ */
 const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekte, coreHours, userProfile }) => {
   const [formData, setFormData] = useState({
     date: '',

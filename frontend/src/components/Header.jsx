@@ -2,7 +2,12 @@ import { NavLink } from "react-router-dom";
 import logo from "../assets/logo.png";
 import Button from "./Button";
 
-export default function Header({ onLogout }) {
+/**
+ * `Header` Komponente für die Kopfzeile der Anwendung.
+ * Zeigt den Titel der Anwendung und ermöglicht die Navigation.
+ * Beinhaltet auch die Logout-Funktionalität.
+ */
+const Header = ({ onLogout }) => {
   return (
     <header className="fixed top-0 w-full z-50 bg-secondary shadow border-b-2 border-primary">
       <div className="max-w-7xl mx-auto flex items-center justify-between py-4 px-4">
@@ -62,3 +67,5 @@ export default function Header({ onLogout }) {
     </header>
   );
 }
+
+export default Header;

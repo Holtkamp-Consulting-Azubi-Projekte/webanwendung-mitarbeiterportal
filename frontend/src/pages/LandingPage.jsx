@@ -2,6 +2,10 @@ import React from 'react';
 import AuthModal from '../components/auth/AuthModal';
 import logo from '../assets/logo.png';
 
+/**
+ * `LandingPage` Seite, die als Einstiegspunkt der Anwendung dient.
+ * Zeigt eine Willkommensnachricht und einen Button zum Öffnen des Authentifizierungs-Modals.
+ */
 const LandingPage = ({ onLoginSuccess }) => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-secondary to-white">

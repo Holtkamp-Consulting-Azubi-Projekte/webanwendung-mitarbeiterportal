@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 
-export default function Home() {
+/**
+ * `Home` Seite.
+ * Dient als Standard-Seite nach erfolgreichem Login und leitet zum Dashboard weiter.
+ */
+const Home = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -19,3 +23,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default Home;

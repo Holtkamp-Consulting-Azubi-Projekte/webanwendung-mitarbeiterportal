@@ -16,7 +16,13 @@ const TEMPORARY_TEST_PROJEKTE = [
   "Data Vault (Kunde: APO Bank)",
 ];
 
-export default function Zeitmatrix() {
+/**
+ * `Zeitmatrix` Seite zur Anzeige und Verwaltung der Zeiteinträge.
+ * Lädt Zeiteinträge und Benutzerprofildaten vom Backend.
+ * Integriert die TimeMatrixTable und das TimeEntryModal.
+ * Bietet Funktionen zum Hinzufügen, Bearbeiten, Löschen, Filtern und Sortieren von Zeiteinträgen.
+ */
+const Zeitmatrix = () => {
   const [entries, setEntries] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);

@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+/**
+ * `Profil` Seite zur Anzeige und Bearbeitung des Benutzerprofils.
+ * Lädt Benutzerdaten vom Backend und ermöglicht die Aktualisierung von Informationen wie Name, Position, Projekt und Kernarbeitszeit.
+ * Beinhaltet auch die Funktion zur Passwortänderung.
+ */
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState({

@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from "react";
 
-const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte }) => {
+/**
+ * `TimeMatrixTable` Komponente zur Anzeige und Verwaltung von Zeiteinträgen in einer Tabelle.
+ * Ermöglicht das Hinzufügen, Bearbeiten und Löschen von Zeiteinträgen.
+ * Bietet Funktionen zum Filtern, Sortieren und visuellen Hervorheben von Einträgen.
+ */
+const TimeMatrixTable = React.memo(({ entries, onAddClick, onEditClick, onDeleteClick, filters, onFilterChange, availableProjekte }) => {
   // Corporate Design Button Klassen
   const cdButtonClasses = "text-primary border border-primary bg-transparent hover:text-white hover:bg-primary focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
   const cdTableActionButtonClasses = "text-primary hover:text-primary-dark transition duration-200 text-sm mr-2";
@@ -529,6 +534,6 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
       </div>
     </div>
   );
-};
+});
 
 export default TimeMatrixTable; 

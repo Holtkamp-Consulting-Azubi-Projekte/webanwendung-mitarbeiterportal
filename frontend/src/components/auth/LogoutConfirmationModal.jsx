@@ -1,5 +1,9 @@
 import React from 'react';
 
+/**
+ * `LogoutConfirmationModal` Komponente für das Logout-Bestätigungsmodal.
+ * Fragt den Benutzer, ob er sich wirklich abmelden möchte.
+ */
 const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
   if (!isOpen) return null;
 
