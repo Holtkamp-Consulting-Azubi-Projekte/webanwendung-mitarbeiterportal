@@ -474,7 +474,7 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                   role="menuitem"
                                   onClick={() => {
-                                    onAddClick({ datum: formatLocalDateToYYYYMMDD(date) }); // Datum des aktuellen Eintrags übergeben
+                                    onAddClick(formatLocalDateToYYYYMMDD(date)); // Datum des aktuellen Eintrags übergeben
                                     setOpenDropdownId(null); // Dropdown schließen
                                   }}
                                 >
@@ -497,24 +497,24 @@ const TimeMatrixTable = ({ entries, onAddClick, onEditClick, onDeleteClick, filt
                         </div>
                       </td>
                       {/* Mitarbeiter Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Beginn Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Ende Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Pause Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Arbeitszeit Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Projekt Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Arbeitsort Spalte */}
-                      <td className="border px-2 py-1">-</td>
+                      <td className="border px-2 py-1"></td>{/* Leere Spalte */}
                       {/* Aktionen Spalte */}
                       <td className="border px-2 py-1 text-center">
                         <button
                           className={cdNewEntryButtonClasses}
-                          onClick={() => onAddClick({ datum: formatLocalDateToYYYYMMDD(date) })} // + Eintrag Button für leere Tage
+                          onClick={() => onAddClick(formatLocalDateToYYYYMMDD(date))}
                         >
                           + Eintrag
                         </button>

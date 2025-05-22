@@ -27,6 +27,7 @@ export default function Zeitmatrix() {
   
   // State für Benutzerprofildaten
   const [zeitmatrixUserData, setZeitmatrixUserData] = useState(null);
+  const [userProfile, setUserProfile] = useState(null); // NEU: Profil-Daten
 
   const navigate = useNavigate();
 
@@ -92,9 +93,36 @@ export default function Zeitmatrix() {
     }
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      const response = await axios.get('http://localhost:5050/api/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true
+      });
+      setUserProfile(response.data);
+    } catch (err) {
+      if (err.response?.status === 401) {
+        localStorage.removeItem('access_token');
+        navigate('/login');
+      } else {
+        setError('Fehler beim Laden der Profil-Daten');
+        console.error('Fehler beim Laden der Profil-Daten:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchEntries();
     fetchZeitmatrixUserData(); // Benutzerdaten beim Laden der Komponente abrufen
+    fetchUserProfile(); // NEU: Profil-Daten laden
   }, [navigate]);
 
   // Liste der verfügbaren Projekte
@@ -162,16 +190,22 @@ export default function Zeitmatrix() {
     }
   };
 
-  const handleAddClick = (initialDateData) => {
+  const handleAddClick = (dateString) => {
     setEditingEntry(null);
-    // Kombiniere initialDateData mit Benutzerprofildaten
-    const initialDataWithUser = {
-      ...initialDateData,
-      mitarbeiter: zeitmatrixUserData ? `${zeitmatrixUserData.firstName} ${zeitmatrixUserData.lastName}` : '',
-      projekt: zeitmatrixUserData ? zeitmatrixUserData.currentProject : '',
-      // Weitere Felder, die Sie vorbelegen möchten
+    const [start, end] = userProfile?.coreHours?.split('-') || ['', ''];
+    // Erstelle initialData für neuen Eintrag mit Backend-Feldnamen
+    const initialDataForNewEntry = {
+      datum: dateString, // Datum des Tages
+      beginn: start, // Beginn aus Kernarbeitszeit
+      ende: end, // Ende aus Kernarbeitszeit
+      pause: "0", // Pause standardmäßig als String "0"
+      projekt: [userProfile?.currentProject].filter(p => p) || [], // Projekt als Array, Standard aus userProfile
+      arbeitsort: 'Büro', // Arbeitsort standardmäßig 'Büro'
+      beschreibung: '', // Beschreibung leer
+      mitarbeiter: zeitmatrixUserData ? `${zeitmatrixUserData.firstName} ${zeitmatrixUserData.lastName}` : '', // Mitarbeiter
+      // Keine ID für neuen Eintrag
     };
-    setNewEntryInitialData(initialDataWithUser);
+    setNewEntryInitialData(initialDataForNewEntry);
     setModalOpen(true);
   };
 
@@ -188,10 +222,33 @@ export default function Zeitmatrix() {
   };
 
   const handleSaveEntry = (entryData) => {
-    if (!editingEntry) {
-      // Beim Hinzufügen: Mitarbeiter festlegen (wird jetzt im handleAddClick gemacht)
-      // entryData.mitarbeiter = "Marco";
+    // Stelle sicher, dass das Datum im korrekten Format ist
+    const dataToSave = { ...entryData };
+    if (dataToSave.date instanceof Date) {
+       dataToSave.date = dataToSave.date.toISOString().split('T')[0]; // Datum als YYYY-MM-DD String formatieren
+    } else if (typeof dataToSave.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dataToSave.date)) {
+        console.error("Ungültiges Datumsformat vor dem Speichern:", dataToSave.date);
+        setError("Ungültiges Datumsformat. Eintrag kann nicht gespeichert werden.");
+        setModalOpen(false); // Modal schließen bei ungültigem Datum
+        setEditingEntry(null);
+        return; // Speichern abbrechen
     }
+
+    // Feldnamen von Frontend zu Backend anpassen
+    const backendData = {
+        datum: dataToSave.date, // date wird zu datum
+        beginn: dataToSave.startTime, // startTime wird zu beginn
+        ende: dataToSave.endTime, // endTime wird zu ende
+        pause: String(dataToSave.breakDuration || 0), // breakDuration wird zu pause (als String)
+        projekt: Array.isArray(dataToSave.project) ? dataToSave.project : [dataToSave.project].filter(p => p), // project wird zu projekt (als Array)
+        arbeitsort: dataToSave.workLocation || '', // workLocation wird zu arbeitsort
+        beschreibung: dataToSave.description || '', // description wird zu beschreibung
+        mitarbeiter: dataToSave.mitarbeiter, // mitarbeiter bleibt gleich
+        // id nur hinzufügen, wenn es ein bestehender Eintrag ist
+        ...(dataToSave.id && { id: dataToSave.id })
+    };
+
+    console.log("Daten, die an das Backend gesendet werden:", backendData); // Logge die zu sendenden Daten
 
     let method;
     let url;
@@ -200,29 +257,39 @@ export default function Zeitmatrix() {
       // Wenn wir einen bestehenden Eintrag bearbeiten
       method = "PUT";
       // Verwende die ID aus den übergebenen entryData
-      url = `${API_URL}${entryData.id}`;
+      url = `${API_URL}${dataToSave.id}`;
     } else {
       // Wenn wir einen neuen Eintrag hinzufügen
       method = "POST";
       url = API_URL; // Basis-URL für POST
     }
 
-    const token = localStorage.getItem('access_token'); // Token aus localStorage abrufen
+    const token = localStorage.getItem('access_token');
 
     fetch(url, {
       method: method,
       headers: {
         "Content-Type": "application/json",
-        'Authorization': `Bearer ${token}` // Authorization-Header hinzufügen
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(entryData),
+      body: JSON.stringify(backendData), // backendData verwenden
     })
-      .then((res) => {
+      .then(async (res) => {
         if (!res.ok) {
-          return res.json().then(data => {
-            console.error("Backend-Fehlerdaten:", data);
-            throw new Error(data.error || "Fehler beim Speichern: Unbekannter Fehler");
-          });
+          // Versuche, die Fehlerdaten aus der Response zu lesen
+          const errorData = await res.json().catch(() => null); // Versuche JSON zu parsen, fange Fehler wenn nicht JSON
+          console.error("HTTP Error Response Status:", res.status);
+          console.error("HTTP Error Response Data:", errorData);
+
+          // Logge Validierungsdetails, falls vorhanden im errorData
+          if (errorData?.details) {
+              console.error("Validierungsdetails vom Backend (aus Response Data):");
+              console.error(errorData.details);
+          } else if (errorData) {
+              console.warn("'details' property not found in HTTP Error Response Data. Full data logged above.");
+          }
+           // Wir werfen immer noch einen Fehler, damit der catch-Block ausgeführt wird
+          throw new Error(errorData?.error || `HTTP error! status: ${res.status}`);
         }
         return res.json();
       })
@@ -230,15 +297,19 @@ export default function Zeitmatrix() {
         fetchEntries();
         setModalOpen(false);
         setEditingEntry(null);
+        setError(null);
       })
       .catch((err) => {
-        console.error("Fehler beim Speichern/Aktualisieren des Eintrags:", err);
-        setError(err.message);
-        // Das Modal nur schließen, wenn es kein Validierungsfehler vom Backend ist
-        if (err.message && !err.message.includes("Validierungsfehler")) {
-           setModalOpen(false);
-           setEditingEntry(null);
-        }
+        console.error("Fehler beim Speichern/Aktualisieren des Eintrags (im Catch-Block):");
+        // Hier loggen wir nur noch den Fehler selbst, da die Response-Details im then-Block geloggt werden sollten
+        console.error(err);
+
+        const errorMessage = err.message || "Ein unerwarteter Fehler ist beim Speichern aufgetreten.";
+        setError(errorMessage);
+
+        // Schließe das Modal bei jedem Fehler im Catch-Block
+        setModalOpen(false);
+        setEditingEntry(null);
       });
   };
 
@@ -293,6 +364,8 @@ export default function Zeitmatrix() {
         onSave={handleSaveEntry}
         initialData={editingEntry || newEntryInitialData}
         availableProjekte={availableProjekte}
+        coreHours={userProfile?.coreHours}
+        userProfile={userProfile}
       />
     </div>
   );

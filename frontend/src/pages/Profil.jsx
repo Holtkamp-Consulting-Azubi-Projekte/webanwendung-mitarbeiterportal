@@ -11,6 +11,8 @@ export default function Profile() {
     position: '',
     currentProject: '',
     coreHours: '',
+    coreHoursStart: '',
+    coreHoursEnd: '',
     telefon: '',
   });
   const [error, setError] = useState('');
@@ -25,6 +27,9 @@ export default function Profile() {
 
   // Neuer State für Projektliste
   const [projects, setProjects] = useState([]);
+
+  const [coreHoursWarning, setCoreHoursWarning] = useState('');
+  const [coreHoursError, setCoreHoursError] = useState('');
 
   const navigate = useNavigate();
 
@@ -57,6 +62,30 @@ export default function Profile() {
       return () => clearTimeout(timer); // Timer beim Aufräumen löschen
     }
   }, [passwordSuccess]);
+
+  useEffect(() => {
+    // Wenn Profildaten geladen werden, coreHours aufsplitten
+    if (userData.coreHours && (!userData.coreHoursStart || !userData.coreHoursEnd)) {
+      const [start, end] = userData.coreHours.split('-');
+      setUserData(prev => ({
+        ...prev,
+        coreHoursStart: start || '',
+        coreHoursEnd: end || '',
+      }));
+    }
+    // eslint-disable-next-line
+  }, [userData.coreHours]);
+
+  useEffect(() => {
+    // Validierung bei Änderung der Zeitfelder
+    if (userData.coreHoursStart && userData.coreHoursEnd) {
+      validateCoreHours(userData.coreHoursStart, userData.coreHoursEnd);
+    } else {
+      setCoreHoursError('');
+      setCoreHoursWarning('');
+    }
+    // eslint-disable-next-line
+  }, [userData.coreHoursStart, userData.coreHoursEnd]);
 
   const fetchUserData = async () => {
     try {
@@ -109,10 +138,21 @@ export default function Profile() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    if (name === 'coreHoursStart' || name === 'coreHoursEnd') {
+      const start = name === 'coreHoursStart' ? value : userData.coreHoursStart;
+      const end = name === 'coreHoursEnd' ? value : userData.coreHoursEnd;
+      setUserData(prev => ({
+        ...prev,
+        coreHoursStart: start,
+        coreHoursEnd: end,
+        coreHours: start && end ? `${start}-${end}` : ''
+      }));
+    } else {
+      setUserData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   // Neue Funktion für Passwort-Input-Handling
@@ -127,18 +167,48 @@ export default function Profile() {
     }
   };
 
+  const validateCoreHours = (start, end) => {
+    setCoreHoursError('');
+    setCoreHoursWarning('');
+    if (!start || !end) return true;
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+    const startTime = startHour * 60 + startMinute;
+    const endTime = endHour * 60 + endMinute;
+    if (endTime <= startTime) {
+      setCoreHoursError('Die Endzeit muss nach der Startzeit liegen.');
+      return false;
+    }
+    let diff = endTime - startTime;
+    // Ab 6 Stunden Brutto-Arbeitszeit 30 Minuten Pause abziehen
+    let pause = 0;
+    if (diff > 360) {
+      pause = 30;
+      diff -= 30;
+    }
+    if (diff !== 480) {
+      const stunden = Math.floor(diff / 60);
+      const minuten = diff % 60;
+      setCoreHoursWarning(`Die aktuelle Netto-Arbeitszeit beträgt ${stunden} Stunden${minuten > 0 ? ` und ${minuten} Minuten` : ''}. (Ab 6 Stunden wird 30 Minuten Pause abgezogen.) Die Kernarbeitszeit sollte genau 8 Stunden betragen.`);
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-
+    // Kernarbeitszeit-Validierung vor dem Speichern
+    if (!validateCoreHours(userData.coreHoursStart, userData.coreHoursEnd)) {
+      setError('Bitte korrigiere die Kernarbeitszeit.');
+      return;
+    }
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
         navigate('/login');
         return;
       }
-
       await axios.put('http://localhost:5050/api/profile', userData, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -286,15 +356,39 @@ export default function Profile() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Kernarbeitszeit</label>
-                <input
-                  type="text"
-                  name="coreHours"
-                  value={userData.coreHours || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Kernarbeitszeit</label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Von</label>
+                    <input
+                      type="time"
+                      name="coreHoursStart"
+                      value={userData.coreHoursStart || ''}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">Bis</label>
+                    <input
+                      type="time"
+                      name="coreHoursEnd"
+                      value={userData.coreHoursEnd || ''}
+                      onChange={handleInputChange}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                {coreHoursError && (
+                  <div className="mt-2 text-red-600 text-sm">{coreHoursError}</div>
+                )}
+                {coreHoursWarning && !coreHoursError && (
+                  <div className="mt-2 text-yellow-600 text-sm">{coreHoursWarning}</div>
+                )}
+                <p className="mt-1 text-sm text-gray-500">
+                  Die Kernarbeitszeit wird in der Zeitmatrix verwendet, um Zeiteinträge außerhalb dieser Zeit zu markieren.
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Telefon</label>
@@ -340,7 +434,11 @@ export default function Profile() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Kernarbeitszeit</h3>
-              <p className="mt-1 text-lg">{userData.coreHours || '-'}</p>
+              <p className="mt-1 text-lg">
+                {userData.coreHoursStart && userData.coreHoursEnd
+                  ? `${userData.coreHoursStart} - ${userData.coreHoursEnd}`
+                  : userData.coreHours || '-'}
+              </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Telefon</h3>
