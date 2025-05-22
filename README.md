@@ -31,14 +31,12 @@ webanwendung-mitarbeiterportal/
 ├── backend/
 │   ├── app.py
 │   ├── auth.py
-│   ├── user.py
-│   ├── project.py
-│   ├── time_tracking.py
+│   ├── time_matrix.py
 │   ├── data/
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/   → Header, Footer, Buttons
+│   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable
 │   │   ├── pages/        → Home, Login, Profil, Projekte, Zeiterfassung, Einstellungen
 │   │   └── styles/       → header.css, footer.css
 │   ├── public/
@@ -59,6 +57,8 @@ webanwendung-mitarbeiterportal/
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
 - [x] Geschützte Routen mit PrivateRoute-Komponente
 - [x] AuthModal für Login/Registrierung auf der LandingPage
+- [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
+- [x] Validierung der Benutzerdaten
 
 ### 🕒 Zeiterfassung
 - [x] Zeitstempeln (Start/Ende)
@@ -72,10 +72,20 @@ webanwendung-mitarbeiterportal/
 - [x] Monats-/Jahresauswahl (Dropdown für 2025)
 - [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
 - [x] Integration der Zeitmatrix in das Hauptlayout
+- [x] Kernarbeitszeit-Integration in Zeiteinträge
+- [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
+
+### 👤 Profil
+- [x] Anzeige und Bearbeitung von Profildaten
+- [x] Kernarbeitszeit-Einstellung mit Validierung
+- [x] Standardprojekt-Auswahl
+- [x] Passwortänderung
+- [x] Telefonnummer und Position
 
 ### 📁 Projektverwaltung
 - [x] Projekte anlegen, bearbeiten, löschen
-- [ ] Projektbezogene Zeiterfassung (geplant)
+- [x] Projektbezogene Zeiterfassung
+- [x] Standardprojekt im Profil
 
 ### ⚙️ Einstellungen
 - [x] Einstellungsseite mit Benutzeroptionen
@@ -90,8 +100,12 @@ webanwendung-mitarbeiterportal/
 | POST    | `/api/register`        | Neue Registrierung                    |
 | GET     | `/api/session`         | Aktuelle Session abfragen        |
 | GET     | `/api/projects`        | Alle Projekte abrufen            |
-| POST    | `/api/time/start`      | Startzeit erfassen               |
-| POST    | `/api/time/end`        | Endzeit erfassen                 |
+| GET     | `/api/profile`         | Profildaten abrufen              |
+| PUT     | `/api/profile`         | Profildaten aktualisieren         |
+| PUT     | `/api/change-password` | Passwort ändern                   |
+| GET     | `/api/time-matrix`     | Zeitmatrix-Daten abrufen          |
+| POST    | `/api/time-matrix`     | Neuen Zeiteintrag erstellen       |
+| PUT     | `/api/time-matrix`     | Zeiteintrag aktualisieren         |
 
 ---
 
@@ -131,5 +145,5 @@ npm run dev
 - Marco Grochowiak – Entwicklung & Projektleitung
 - Tobias Holtkamp – Fachliche Beratung
 
-## 📄 Lizenz
+## �� Lizenz
 MIT-Lizenz
