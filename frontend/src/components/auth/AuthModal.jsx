@@ -32,27 +32,34 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           }),
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
 
         if (response.ok) {
           setError('');
           const token = data.access_token;
           onLoginSuccess(token);
           setTimeout(() => {
-            setSuccess(data.message);
+            setSuccess(data.message || 'Anmeldung erfolgreich.');
             navigate('/app');
           }, 50);
         } else {
-          setError(data.message);
           setSuccess('');
           if (data.message && data.message.includes('nicht registriert')) {
+            setError('Dieser Benutzer ist nicht registriert. Bitte registrieren Sie sich zuerst.');
             setTimeout(() => {
               setIsLogin(false);
-            }, 2000);
+            }, 3000);
+          } else if (response.status === 401 || response.status === 404) {
+            setError('Anmeldung fehlgeschlagen: Ungültige E-Mail oder Passwort.');
+          } else if (data.message) {
+            setError(data.message);
+          } else {
+            setError(`Fehler bei der Anmeldung: Status ${response.status}`);
           }
         }
       } catch (err) {
-        setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+        console.error('Netzwerkfehler oder Fehler beim fetch:', err);
+        setError('Verbindungsfehler. Bitte prüfen Sie Ihre Internetverbindung oder versuchen Sie es später erneut.');
         setSuccess('');
       }
     } else {
@@ -76,10 +83,10 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
           }),
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
 
         if (response.ok) {
-          setSuccess(data.message);
+          setSuccess(data.message || 'Registrierung erfolgreich!');
           setError('');
           setTimeout(() => {
             setIsLogin(true);
@@ -92,11 +99,16 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
             });
           }, 2000);
         } else {
-          setError(data.message);
           setSuccess('');
+          if (data.message) {
+            setError(data.message);
+          } else {
+            setError(`Fehler bei der Registrierung: Status ${response.status}`);
+          }
         }
       } catch (err) {
-        setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+        console.error('Netzwerkfehler oder Fehler beim fetch (Registrierung):', err);
+        setError('Verbindungsfehler. Bitte prüfen Sie Ihre Internetverbindung oder versuchen Sie es später erneut.');
         setSuccess('');
       }
     }

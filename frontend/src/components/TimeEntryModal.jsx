@@ -11,7 +11,8 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
     project: '',
     workLocation: '',
     description: '',
-    id: ''
+    id: '',
+    mitarbeiter: ''
   });
   const [timeWarning, setTimeWarning] = useState('');
 
@@ -27,6 +28,7 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
           workLocation: initialData.arbeitsort || '',
           description: initialData.beschreibung || '',
           id: initialData.id,
+          mitarbeiter: initialData.mitarbeiter || ''
         });
       } else {
         setFormData({
@@ -36,7 +38,9 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
           breakDuration: 0,
           project: '',
           workLocation: '',
-          description: ''
+          description: '',
+          id: '',
+          mitarbeiter: ''
         });
       }
       setTimeWarning('');
@@ -88,6 +92,16 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
+            <input
+              type="text"
+              name="mitarbeiter"
+              value={formData.mitarbeiter}
+              disabled
+              className="w-full border px-2 py-1 rounded bg-gray-100"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Datum</label>
             <input
