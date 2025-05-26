@@ -7,12 +7,18 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from auth import register_user, login_user
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
-from time_matrix import time_matrix_bp  # Importiere den Zeitmatrix-Blueprint
+from time_matrix import time_matrix_bp
+from database import Database
+from datetime import datetime
 import json
 import os
+import subprocess
 
 # Flask-Anwendung initialisieren
 app = Flask(__name__)
+
+# Konfiguration laden
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')
 
 # CORS-Konfiguration für Frontend-Zugriff
 CORS(app, resources={
@@ -25,11 +31,40 @@ CORS(app, resources={
 })
 
 # JWT-Konfiguration für Authentifizierung
-app.config["JWT_SECRET_KEY"] = "super-secret"  # In Produktion: Zufälligen Secret-Key aus Umgebungsvariable verwenden
 jwt = JWTManager(app)
 
 # Zeitmatrix-Blueprint registrieren
 app.register_blueprint(time_matrix_bp)
+
+# Initialisiere die Datenbank und erstelle die Tabellen
+def init_db():
+    db = Database()
+    try:
+        # Prüfe, ob die Tabellen bereits existieren
+        result = db.fetch_one("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'h_user'
+            );
+        """)
+        
+        if not result or not result[0]:
+            # Führe das SQL-Skript aus, um die Tabellen zu erstellen
+            subprocess.run(['psql', '-d', 'mitarbeiterportal', '-f', 'init_data_vault.sql'], check=True)
+            print("Datenbank-Tabellen wurden erfolgreich erstellt.")
+        else:
+            print("Datenbank-Tabellen existieren bereits.")
+            
+    except subprocess.CalledProcessError as e:
+        print(f"Fehler beim Erstellen der Tabellen: {e}")
+    except Exception as e:
+        print(f"Fehler bei der Datenbankinitialisierung: {e}")
+    finally:
+        db.close()
+
+# Rufe die Initialisierung auf
+init_db()
 
 @app.route("/api/ping")
 def ping():
@@ -65,66 +100,44 @@ def profile():
         return jsonify({}), 200
 
     current_user_email = get_jwt_identity()
-    users_file = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
-
-    if request.method == "GET":
-        with open(users_file, 'r') as f:
-            users_data = json.load(f)
-            user = next((user for user in users_data['users'] if user['email'] == current_user_email), None)
+    db = Database()
+    
+    try:
+        if request.method == "GET":
+            # Benutzer aus der Datenbank abrufen
+            user = db.get_user_by_email(current_user_email)
             if user:
-                # Bereite Benutzerdaten für das Frontend vor
                 user_data = {
-                    'firstName': user.get('firstName', ''),
-                    'lastName': user.get('lastName', ''),
-                    'email': user.get('email', ''),
-                    'position': user.get('position', ''),
-                    'currentProject': user.get('currentProject', ''),
-                    'coreHours': user.get('coreHours', ''),
-                    'telefon': user.get('telefon', '')
+                    'firstName': user[2],  # first_name
+                    'lastName': user[3],   # last_name
+                    'email': user[1],      # user_id
+                    'position': user[4],   # position
+                    'coreHours': user[5],  # core_hours
+                    'telefon': user[6]     # telefon
                 }
                 return jsonify(user_data), 200
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    elif request.method == "PUT":
-        try:
-            with open(users_file, 'r') as f:
-                users_data = json.load(f)
-
-            # Finde den Benutzer
-            user_index = next((i for i, user in enumerate(users_data['users']) 
-                             if user['email'] == current_user_email), None)
-
-            if user_index is None:
+        elif request.method == "PUT":
+            user = db.get_user_by_email(current_user_email)
+            if not user:
                 return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-            # Aktualisiere die Benutzerdaten
+            # Update-Daten aus dem Request
             update_data = request.json
             
             # Erlaubte Felder für das Update
-            allowed_fields = ['firstName', 'lastName', 'position', 'currentProject', 'coreHours', 'telefon']
-            updated_user_data = {key: update_data.get(key) for key in allowed_fields if key in update_data}
-
-            # Stelle sicher, dass die E-Mail nicht geändert werden kann
-            if 'email' in updated_user_data:
-                del updated_user_data['email']
-                
-            # Entferne alte Felder
-            if 'abteilung' in users_data['users'][user_index]:
-                del users_data['users'][user_index]['abteilung']
-            if 'standort' in users_data['users'][user_index]:
-                del users_data['users'][user_index]['standort']
-
-            # Aktualisiere nur die erlaubten Felder
-            users_data['users'][user_index].update(updated_user_data)
-
-            # Speichere die aktualisierten Daten
-            with open(users_file, 'w') as f:
-                json.dump(users_data, f, indent=2)
+            allowed_fields = ['firstName', 'lastName', 'position', 'coreHours', 'telefon']
+            
+            # Aktualisiere Benutzerdetails
+            db.update_user_details(user[0], update_data)  # user[0] ist hk_user
 
             return jsonify({"message": "Profil erfolgreich aktualisiert"}), 200
 
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
 @app.route("/api/change-password", methods=["PUT", "OPTIONS"])
 @jwt_required()
@@ -144,48 +157,54 @@ def change_password():
     if not current_password or not new_password:
         return jsonify({"error": "Aktuelles und neues Passwort sind erforderlich"}), 400
 
-    users_file = os.path.join(os.path.dirname(__file__), 'data', 'users.json')
-
+    db = Database()
     try:
-        with open(users_file, 'r') as f:
-            users_data = json.load(f)
-
-        user = next((user for user in users_data['users'] if user['email'] == current_user_email), None)
-
+        user = db.get_user_by_email(current_user_email)
         if not user:
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
         # Passwort-Validierung
         if len(new_password) < 8:
-             return jsonify({"error": "Neues Passwort muss mindestens 8 Zeichen lang sein"}), 400
+            return jsonify({"error": "Neues Passwort muss mindestens 8 Zeichen lang sein"}), 400
 
-        # Speichere die aktualisierten Daten
-        with open(users_file, 'w') as f:
-            json.dump(users_data, f, indent=2)
+        # Überprüfe aktuelles Passwort
+        if not check_password_hash(user[7], current_password):  # password_hash ist das 8. Feld
+            return jsonify({"error": "Aktuelles Passwort ist falsch"}), 401
+
+        # Neues Passwort hashen
+        from werkzeug.security import generate_password_hash
+        new_password_hash = generate_password_hash(new_password)
+
+        # Passwort aktualisieren
+        db.update_password(user[0], new_password_hash)  # user[0] ist hk_user
 
         return jsonify({"message": "Passwort erfolgreich geändert"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
 @app.route("/api/projects", methods=["GET", "OPTIONS"])
 @jwt_required()
 def get_projects():
     """
     Endpunkt zum Abrufen der verfügbaren Projekte.
-    Aktuell eine statische Liste, später aus Datenbank zu laden.
+    Lädt Projekte aus der Datenbank.
     """
     if request.method == "OPTIONS":
         return jsonify({}), 200
         
-    # Temporäre Liste von Projekten (später aus DB laden)
-    projects = [
-        "Mitarbeiterportal (Kunde: Holtkamp Consulting)",
-        "SAP Administration (Kunde: Winkelmann AG)",
-        "Treasor (Kunde: Agentur für Arbeit)",
-        "Data Vault (Kunde: APO Bank)",
-    ]
-    return jsonify(projects), 200
+    db = Database()
+    try:
+        # Projekte aus der Datenbank laden
+        projects = db.get_projects()
+        project_list = [project[0] for project in projects]  # project_name ist das erste Feld
+        return jsonify(project_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5050)

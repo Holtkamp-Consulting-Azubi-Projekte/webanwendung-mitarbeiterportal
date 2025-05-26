@@ -1,57 +1,41 @@
 import json
 import os
 from datetime import datetime
-
-LOG_FILE = os.path.join(os.path.dirname(__file__), 'data', 'logs.json')
-
-def load_logs():
-    """Lädt Logs aus der JSON-Datei."""
-    if not os.path.exists(LOG_FILE):
-        return []
-    try:
-        with open(LOG_FILE, 'r') as f:
-            content = f.read()
-            if not content:
-                return []
-            # Use json.loads to parse the content that was read
-            return json.loads(content)
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        print(f"Fehler beim Laden der Logs: {e}")
-        return []
-
-def save_logs(logs):
-    """Speichert Logs in der JSON-Datei."""
-    try:
-        # Ensure the data directory exists
-        data_dir = os.path.dirname(LOG_FILE)
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
-
-        # Open in write mode ('w') to overwrite with the full list
-        with open(LOG_FILE, 'w') as f:
-            json.dump(logs, f, indent=4)
-    except IOError as e:
-        print(f"Fehler beim Speichern der Logs: {e}")
+from database import Database
+import hashlib
 
 def log_event(event_type, user_id=None, details=None):
-    """Protokolliert ein Ereignis.
+    """Protokolliert ein Ereignis in der Datenbank.
 
     Args:
         event_type (str): Die Art des Ereignisses (z.B. 'login_success', 'login_failed').
-        user_id (int, optional): Die ID des Benutzers, falls relevant. Defaults to None.
+        user_id (str, optional): Die user_id des Benutzers, falls relevant. Defaults to None.
         details (dict, optional): Zusätzliche Details zum Ereignis. Defaults to None.
     """
-    logs = load_logs()
-    timestamp = datetime.now().isoformat()
-    log_entry = {
-        'timestamp': timestamp,
-        'event_type': event_type,
-        'user_id': user_id,
-        'details': details
-    }
-    logs.append(log_entry)
-    save_logs(logs)
+    db = Database()
+    try:
+        hk_user = None
+        if user_id:
+            # Hole den hk_user anhand der user_id (E-Mail)
+            user = db.get_user_by_email(user_id)
+            if user:
+                hk_user = user[0] # hk_user ist das erste Feld im user-Tuple
 
-# Initialisiere die Log-Datei, falls sie nicht existiert
-if not os.path.exists(LOG_FILE):
-    save_logs([]) 
+        timestamp = datetime.utcnow()
+        rec_src = 'API' # Oder eine passendere Quelle
+
+        db.execute(
+            """
+            INSERT INTO APP_LOGS (timestamp, event_type, hk_user, details, rec_src)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (timestamp, event_type, hk_user, json.dumps(details) if details else None, rec_src)
+        )
+        db.commit()
+
+    except Exception as e:
+        db.rollback()
+        # Hier sollte eine alternative Protokollierung stattfinden, falls die DB nicht verfügbar ist
+        print(f"Fehler beim Protokollieren des Ereignisses in der Datenbank: {e}")
+    finally:
+        db.close() 

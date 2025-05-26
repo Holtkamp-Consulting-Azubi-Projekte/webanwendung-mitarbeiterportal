@@ -2,7 +2,7 @@
 
 ## 🔥 Kurzbeschreibung
 
-Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projektverwaltung und einem wöchentlichen PDF-Export. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und läuft auf einem Raspberry Pi 5 mit PostgreSQL-Datenbank.
+Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projektverwaltung und einem wöchentlichen PDF-Export. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und nutzt eine **PostgreSQL-Datenbank**.
 
 ---
 
@@ -13,7 +13,6 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 - Flask + flask-cors
 - Flask-JWT-Extended
 - PostgreSQL (via psycopg2)
-- JSON-Dateien für Benutzer (`users.json`) und Protokolle von Authentifizierungsereignissen (`logs.json`)
 - PDF-Erstellung über ReportLab (für Wochenberichte)
 
 ### 🎨 Frontend (React)
@@ -32,7 +31,6 @@ webanwendung-mitarbeiterportal/
 │   ├── app.py
 │   ├── auth.py
 │   ├── time_matrix.py
-│   ├── data/
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
@@ -51,18 +49,18 @@ webanwendung-mitarbeiterportal/
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
-- [x] Registrierung mit Passwort-Hashing
-- [x] Login mit JWT (JSON Web Token)
-- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.)
-- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
+- [x] Registrierung mit Passwort-Hashing (Datenbank)
+- [x] Login mit JWT (JSON Web Token) (Datenbank)
+- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.) (Datenbank)
+- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung) (Datenbank)
 - [x] Geschützte Routen mit PrivateRoute-Komponente
 - [x] AuthModal für Login/Registrierung auf der LandingPage
 - [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
 - [x] Validierung der Benutzerdaten
 
 ### 🕒 Zeiterfassung
-- [x] Zeitstempeln (Start/Ende)
-- [x] Tages- & Wochenansicht
+- [x] Zeitstempeln (Start/Ende) (Datenbank)
+- [x] Tages- & Wochenansicht (Datenbank)
 - [x] PDF-Export der Wochenübersicht
 - [x] Automatischer Versand (freitags 18 Uhr, geplant)
 - [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter)
@@ -76,16 +74,16 @@ webanwendung-mitarbeiterportal/
 - [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
 
 ### 👤 Profil
-- [x] Anzeige und Bearbeitung von Profildaten
+- [x] Anzeige und Bearbeitung von Profildaten (Datenbank)
 - [x] Kernarbeitszeit-Einstellung mit Validierung
-- [x] Standardprojekt-Auswahl
-- [x] Passwortänderung
-- [x] Telefonnummer und Position
+- [x] Standardprojekt-Auswahl (Datenbank)
+- [x] Passwortänderung (Datenbank)
+- [x] Telefonnummer und Position (Datenbank)
 
 ### 📁 Projektverwaltung
-- [x] Projekte anlegen, bearbeiten, löschen
-- [x] Projektbezogene Zeiterfassung
-- [x] Standardprojekt im Profil
+- [x] Projekte anlegen, bearbeiten, löschen (Datenbank)
+- [x] Projektbezogene Zeiterfassung (Datenbank)
+- [x] Standardprojekt im Profil (Datenbank)
 
 ### ⚙️ Einstellungen
 - [x] Einstellungsseite mit Benutzeroptionen
@@ -94,18 +92,19 @@ webanwendung-mitarbeiterportal/
 
 ## 🧪 API-Endpunkte (Auswahl)
 
-| Methode | Endpoint               | Beschreibung                          |
-|---------|------------------------|---------------------------------------|
-| POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück |
-| POST    | `/api/register`        | Neue Registrierung                    |
-| GET     | `/api/session`         | Aktuelle Session abfragen        |
-| GET     | `/api/projects`        | Alle Projekte abrufen            |
-| GET     | `/api/profile`         | Profildaten abrufen              |
-| PUT     | `/api/profile`         | Profildaten aktualisieren         |
-| PUT     | `/api/change-password` | Passwort ändern                   |
-| GET     | `/api/time-matrix`     | Zeitmatrix-Daten abrufen          |
-| POST    | `/api/time-matrix`     | Neuen Zeiteintrag erstellen       |
-| PUT     | `/api/time-matrix`     | Zeiteintrag aktualisieren         |
+| Methode | Endpoint               | Beschreibung                                  |
+|---------|------------------------|-----------------------------------------------|
+| POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück (DB) |
+| POST    | `/api/register`        | Neue Registrierung (DB)                       |
+| GET     | `/api/session`         | Aktuelle Session abfragen                    |
+| GET     | `/api/projects`        | Alle Projekte abrufen (DB)                   |
+| GET     | `/api/profile`         | Profildaten abrufen (DB)                     |
+| PUT     | `/api/profile`         | Profildaten aktualisieren (DB)                |
+| PUT     | `/api/change-password` | Passwort ändern (DB)                         |
+| GET     | `/api/time-entries`     | Zeiteinträge abrufen (DB)                     |
+| POST    | `/api/time-entries`     | Neuen Zeiteintrag erstellen (DB)              |
+| PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren (DB)                |
+| DELETE  | `/api/time-entries/<id>`   | Zeiteintrag löschen (DB)                     |
 
 ---
 
@@ -114,16 +113,47 @@ webanwendung-mitarbeiterportal/
 ### Voraussetzungen
 - Node.js (v18+ empfohlen)
 - Python 3.10+
-- PostgreSQL-Server (läuft auf Raspberry Pi 5)
+- PostgreSQL-Server
 - Ports: `5173` (Frontend), `5050` (Backend)
+
+### Datenbank konfigurieren
+Die Backend-Anwendung verwendet Umgebungsvariablen für die Datenbankverbindung:
+
+- `DB_HOST`: Hostname des Datenbankservers (Standard: `localhost`)
+- `DB_PORT`: Port des Datenbankservers (Standard: `********`)
+- `DB_NAME`: Name der Datenbank (Standard: `mitarbeiterportal`)
+- `DB_USER`: Benutzername für die Datenbankverbindung (Standard: `*****`)
+- `DB_PASSWORD`: Passwort für die Datenbankverbindung (Standard: `************`)
+
+Es wird empfohlen, diese Variablen in einer `.env`-Datei im `backend`-Verzeichnis zu setzen oder sie direkt im Terminal zu exportieren, bevor das Backend gestartet wird.
+
+Beispiel für `.env` im `backend`-Verzeichnis:
+
+```env
+DB_HOST=localhost
+DB_PORT=12345
+DB_NAME=mitarbeiterportal
+DB_USER=admin
+DB_PASSWORD=password
+```
 
 ### Backend starten
 
+Stellen Sie sicher, dass Ihre Datenbank läuft und die Umgebungsvariablen gesetzt sind.
+
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+# Falls noch nicht geschehen:
+# python3 -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
+# pip install python-dotenv # Nötig, wenn .env-Datei verwendet wird
+
+# Umgebungsvariablen setzen (falls keine .env-Datei verwendet wird)
+# export DB_USER="admin"
+# export DB_PASSWORD="mai2025mai#Tobi"
+# export DB_PORT="15432"
+
 python app.py
 ```
 
@@ -145,5 +175,5 @@ npm run dev
 - Marco Grochowiak – Entwicklung & Projektleitung
 - Tobias Holtkamp – Fachliche Beratung
 
-## �� Lizenz
+## ⚖️ Lizenz
 MIT-Lizenz

@@ -376,4 +376,6 @@ const Zeitmatrix = () => {
     </div>
   );
 }
+
+export default Zeitmatrix;
   
