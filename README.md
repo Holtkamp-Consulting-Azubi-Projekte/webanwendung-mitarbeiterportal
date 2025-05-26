@@ -150,9 +150,9 @@ cd backend
 # pip install python-dotenv # Nötig, wenn .env-Datei verwendet wird
 
 # Umgebungsvariablen setzen (falls keine .env-Datei verwendet wird)
-# export DB_USER="admin"
-# export DB_PASSWORD="mai2025mai#Tobi"
-# export DB_PORT="15432"
+# export DB_USER="*****"
+# export DB_PASSWORD="*****"
+# export DB_PORT="12345"
 
 python app.py
 ```
