@@ -1,0 +1,5 @@
+services:
+  mitarbeiterportal-backend:
+    container_name: mitarbeiterportal-backend
+    ports:
+      - "5050:5050"
