@@ -1,3 +1,25 @@
+-- Backup der bestehenden Daten
+CREATE TABLE backup_h_user AS SELECT * FROM h_user;
+CREATE TABLE backup_h_project AS SELECT * FROM h_project;
+CREATE TABLE backup_l_user_project_timeentry AS SELECT * FROM l_user_project_timeentry;
+CREATE TABLE backup_s_user_details AS SELECT * FROM s_user_details;
+CREATE TABLE backup_s_user_login AS SELECT * FROM s_user_login;
+CREATE TABLE backup_s_project_details AS SELECT * FROM s_project_details;
+CREATE TABLE backup_s_timeentry_details AS SELECT * FROM s_timeentry_details;
+CREATE TABLE backup_s_user_current_project AS SELECT * FROM s_user_current_project;
+CREATE TABLE backup_app_logs AS SELECT * FROM app_logs;
+
+-- Löschen der bestehenden Tabellen (in korrekter Reihenfolge wegen Fremdschlüssel)
+DROP TABLE IF EXISTS s_timeentry_details CASCADE;
+DROP TABLE IF EXISTS s_user_current_project CASCADE;
+DROP TABLE IF EXISTS s_project_details CASCADE;
+DROP TABLE IF EXISTS s_user_login CASCADE;
+DROP TABLE IF EXISTS s_user_details CASCADE;
+DROP TABLE IF EXISTS l_user_project_timeentry CASCADE;
+DROP TABLE IF EXISTS h_project CASCADE;
+DROP TABLE IF EXISTS h_user CASCADE;
+DROP TABLE IF EXISTS app_logs CASCADE;
+
 -- Optional: Schema erstellen, falls benötigt
 -- CREATE SCHEMA data_vault;
 -- SET search_path TO data_vault;
@@ -87,8 +109,8 @@ CREATE TABLE S_TIMEENTRY_DETAILS (
     HK_USER_PROJECT_TIMEENTRY BYTEA NOT NULL, -- Fremdschlüssel zu L_USER_PROJECT_TIMEENTRY
     T_FROM TIMESTAMP NOT NULL,      -- Technischer Gültigkeitsbeginn (Teil des Primary Key)
     T_TO TIMESTAMP NULL,            -- Technisches Gültigkeitsende
-    B_FROM DATE NOT NULL,           -- Fachlicher Gültigkeitsbeginn (kann dem ENTRY_DATE entsprechen)
-    B_TO DATE NULL,                 -- Fachliches Gültigkeitsende (oft NULL für einzelne Ereignisse)
+    B_FROM DATE NOT NULL,           -- Fachlicher Gültigkeitsbeginn
+    B_TO DATE NULL,                 -- Fachliches Gültigkeitsende
     REC_SRC VARCHAR(255) NOT NULL,    -- Quelle des Datensatzes
     ENTRY_DATE DATE NOT NULL,         -- Datum des Zeiteintrags
     START_TIME TIME NOT NULL,         -- Beginnzeit
@@ -107,8 +129,8 @@ CREATE TABLE S_USER_CURRENT_PROJECT (
     HK_USER BYTEA NOT NULL,     -- Fremdschlüssel zu H_USER
     T_FROM TIMESTAMP NOT NULL,        -- Technischer Gültigkeitsbeginn (Teil des Primary Key)
     T_TO TIMESTAMP NULL,                -- Technisches Gültigkeitsende
-    B_FROM DATE NOT NULL,               -- Fachlicher Gültigkeitsbeginn (wann wurde das Projekt zugewiesen)
-    B_TO DATE NULL,                     -- Fachliches Gültigkeitsende (wann wurde das Projekt geändert/entfernt)
+    B_FROM DATE NOT NULL,               -- Fachlicher Gültigkeitsbeginn
+    B_TO DATE NULL,                     -- Fachliches Gültigkeitsende
     REC_SRC VARCHAR(255) NOT NULL,      -- Quelle des Datensatzes
     HK_PROJECT BYTEA NOT NULL,  -- Fremdschlüssel zu H_PROJECT (das aktuell zugewiesene Projekt)
 
@@ -126,3 +148,25 @@ CREATE TABLE APP_LOGS (
     DETAILS JSONB NULL,               -- Zusätzliche Details im JSON-Format
     REC_SRC VARCHAR(255) NOT NULL     -- Quelle des Datensatzes (z.B. 'API')
 );
+
+-- Wiederherstellung der Daten
+INSERT INTO h_user SELECT * FROM backup_h_user;
+INSERT INTO h_project SELECT * FROM backup_h_project;
+INSERT INTO l_user_project_timeentry SELECT * FROM backup_l_user_project_timeentry;
+INSERT INTO s_user_details SELECT * FROM backup_s_user_details;
+INSERT INTO s_user_login SELECT * FROM backup_s_user_login;
+INSERT INTO s_project_details SELECT * FROM backup_s_project_details;
+INSERT INTO s_timeentry_details SELECT * FROM backup_s_timeentry_details;
+INSERT INTO s_user_current_project SELECT * FROM backup_s_user_current_project;
+INSERT INTO app_logs SELECT * FROM backup_app_logs;
+
+-- Aufräumen der Backup-Tabellen
+DROP TABLE backup_h_user;
+DROP TABLE backup_h_project;
+DROP TABLE backup_l_user_project_timeentry;
+DROP TABLE backup_s_user_details;
+DROP TABLE backup_s_user_login;
+DROP TABLE backup_s_project_details;
+DROP TABLE backup_s_timeentry_details;
+DROP TABLE backup_s_user_current_project;
+DROP TABLE backup_app_logs;
