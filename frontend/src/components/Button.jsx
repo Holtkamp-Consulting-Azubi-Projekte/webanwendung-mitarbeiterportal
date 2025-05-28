@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Button` Komponente für wiederverwendbare Schaltflächen.
  * Akzeptiert verschiedene Props zur Anpassung von Aussehen und Verhalten.

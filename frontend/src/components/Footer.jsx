@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Footer` Komponente für die Fußzeile der Anwendung.
  * Zeigt typische Informationen wie Copyright an.

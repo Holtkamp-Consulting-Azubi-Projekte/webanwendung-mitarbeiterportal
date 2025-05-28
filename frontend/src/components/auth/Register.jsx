@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Register` Komponente für das Registrierungsformular.
  * Ermöglicht neuen Benutzern die Erstellung eines Kontos.

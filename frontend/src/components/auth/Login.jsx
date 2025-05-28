@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Login` Komponente für das Login-Formular.
  * Ermöglicht Benutzern die Anmeldung mit E-Mail und Passwort.
