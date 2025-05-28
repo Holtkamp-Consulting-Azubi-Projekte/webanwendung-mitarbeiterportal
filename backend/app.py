@@ -65,7 +65,7 @@ def init_db():
         db.close()
 
 # Rufe die Initialisierung auf
-#init_db()
+init_db()
 
 @app.route("/api/ping")  # Optional
 def ping():
