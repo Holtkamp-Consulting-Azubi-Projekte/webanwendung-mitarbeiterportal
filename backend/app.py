@@ -24,7 +24,7 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')
 # CORS-Konfiguration für Frontend-Zugriff
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5173"],  # Frontend-URL
+        "origins": ["http://192.168.188.39:3000", "http://localhost:5173"],  # Frontend-URLs
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True
