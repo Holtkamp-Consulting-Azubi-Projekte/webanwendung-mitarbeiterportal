@@ -177,5 +177,3 @@ npm run dev
 
 ## ⚖️ Lizenz
 MIT-Lizenz
-# Dummy
-# Dummy

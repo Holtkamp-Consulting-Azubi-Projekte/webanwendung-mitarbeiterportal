@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: mitarbeiterportal-backend
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    environment:
+      - FLASK_ENV=production
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: mitarbeiterportal-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    restart: always
+
+  db:
+    image: postgres:15
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: mitarbeiterportal
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres-data:
