@@ -9,7 +9,7 @@ from auth import register_user, login_user
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from time_matrix import time_matrix_bp
 from database import Database
-from datetime import datetime
+from datetime import datetime, UTC
 import json
 import os
 import subprocess
@@ -66,10 +66,18 @@ def init_db():
 # Rufe die Initialisierung auf
 init_db()
 
-@app.route("/api/ping")
+@app.route("/api/ping")  # Optional
 def ping():
     """Einfacher Health-Check-Endpunkt."""
     return jsonify({"status": "ok", "message": "Backend läuft"})
+
+@app.route("/api/status")
+def status():
+    """Systemstatus für Healthcheck."""
+    return jsonify({
+        "status": "OK",
+        "timestamp": datetime.now().isoformat()
+    })
 
 @app.route('/api/register', methods=['POST'])
 def register():

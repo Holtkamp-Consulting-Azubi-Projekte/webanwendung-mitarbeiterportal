@@ -18,11 +18,11 @@ class Database:
         """Stellt die Verbindung zur Datenbank her."""
         try:
             self.conn = psycopg2.connect(
-                dbname=os.getenv("DB_NAME", "mitarbeiterportal"),
-                user=os.getenv("DB_USER", "postgres"),
-                password=os.getenv("DB_PASSWORD", "postgres"),
-                host=os.getenv("DB_HOST", "localhost"),
-                port=os.getenv("DB_PORT", "5432")
+                dbname="mitarbeiterportal",
+                user="admin",
+                password="secret",
+                host="db",
+                port="5432"
             )
             self.cur = self.conn.cursor()
             print("Datenbankverbindung erfolgreich hergestellt")
