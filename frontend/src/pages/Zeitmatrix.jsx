@@ -4,8 +4,8 @@ import TimeEntryModal from "../components/TimeEntryModal";
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = "http://localhost:5050/api/time-entries/";
-const PROFILE_API_URL = "http://localhost:5050/api/profile"; // API-URL für Profil
+const API_URL = "http://192.168.188.39:5050/api/time-entries/";
+const PROFILE_API_URL = "http://192.168.188.39:5050/api/profile"; // API-URL für Profil
 
 // Temporäre Liste von Projekten für Testzwecke (könnte vom Backend kommen)
 const TEMPORARY_TEST_PROJEKTE = [
@@ -106,7 +106,7 @@ const Zeitmatrix = () => {
         navigate('/login');
         return;
       }
-      const response = await axios.get('http://localhost:5050/api/profile', {
+      const response = await axios.get('http://192.168.188.39:5050/api/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

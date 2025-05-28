@@ -8,7 +8,7 @@ const Home = () => {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5050/api/ping")
+    fetch("http://192.168.188.39:5050/api/ping")
       .then((res) => res.json())
       .then((data) => setMessage(data.message))
       .catch(() => setMessage("Fehler beim Backend-Aufruf"));

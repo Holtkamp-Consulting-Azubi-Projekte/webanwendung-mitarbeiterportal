@@ -25,7 +25,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
     if (isLogin) {
       try {
-        const response = await fetch('http://localhost:5050/api/login', {
+        const response = await fetch('http://192.168.188.39:5050/api/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ const AuthModal = ({ isOpen, onClose, onLoginSuccess }) => {
       }
 
       try {
-        const response = await fetch('http://localhost:5050/api/register', {
+        const response = await fetch('http://192.168.188.39:5050/api/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

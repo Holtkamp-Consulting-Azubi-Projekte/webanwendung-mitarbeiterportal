@@ -100,7 +100,7 @@ export default function Profile() {
         return;
       }
 
-      const response = await axios.get('http://localhost:5050/api/profile', {
+      const response = await axios.get('http://192.168.188.39:5050/api/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -127,7 +127,7 @@ export default function Profile() {
           // navigate('/login'); // Keine Weiterleitung hier, da es beim ersten Laden schon passiert
           return;
         }
-        const response = await axios.get('http://localhost:5050/api/projects', {
+        const response = await axios.get('http://192.168.188.39:5050/api/projects', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -214,7 +214,7 @@ export default function Profile() {
         navigate('/login');
         return;
       }
-      await axios.put('http://localhost:5050/api/profile', userData, {
+      await axios.put('http://192.168.188.39:5050/api/profile', userData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -257,7 +257,7 @@ export default function Profile() {
         return;
       }
 
-      await axios.put('http://localhost:5050/api/change-password', {
+      await axios.put('http://192.168.188.39:5050/api/change-password', {
         currentPassword: currentPassword,
         newPassword: newPassword
       }, {
