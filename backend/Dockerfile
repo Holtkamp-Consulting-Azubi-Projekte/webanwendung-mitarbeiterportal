@@ -7,5 +7,6 @@ RUN apt-get update && \
     pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+COPY ../init_data_vault.sql .
 
 CMD ["flask", "run", "--host=0.0.0.0", "--port=5050"] 
