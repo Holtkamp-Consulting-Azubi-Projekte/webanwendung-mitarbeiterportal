@@ -51,8 +51,27 @@ def init_db():
         """)
         
         if not result or not result[0]:
+            print("Datenbank-Tabellen nicht gefunden, führe Initialisierungsskript aus.")
+            # Setze PGPASSWORD temporär für psql
+            import os
+            db_password = "secret" # Passwort aus database.py oder Umgebungsvariable
+            os.environ['PGPASSWORD'] = db_password
+
             # Führe das SQL-Skript aus, um die Tabellen zu erstellen
-            result = subprocess.run(['psql', '-d', 'mitarbeiterportal', '-f', 'init_data_vault.sql'], capture_output=True, text=True, check=True)
+            # Verwende Host, Port, Benutzer und Datenbanknamen für die Verbindung zum db-Container
+            psql_command = [
+                'psql',
+                '-h', 'db',          # Datenbank-Host (Service-Name in docker-compose)
+                '-p', '5432',        # Datenbank-Port
+                '-U', 'admin',       # Datenbank-Benutzer
+                '-d', 'mitarbeiterportal', # Datenbankname
+                '-f', 'init_data_vault.sql'
+            ]
+            result = subprocess.run(psql_command, capture_output=True, text=True, check=True)
+            
+            # Entferne PGPASSWORD wieder aus der Umgebung
+            del os.environ['PGPASSWORD']
+
             print("Datenbank-Tabellen wurden erfolgreich erstellt.")
             print("psql stdout:", result.stdout)
             print("psql stderr:", result.stderr)
