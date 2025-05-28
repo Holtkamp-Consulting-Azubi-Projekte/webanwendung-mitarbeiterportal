@@ -52,13 +52,17 @@ def init_db():
         
         if not result or not result[0]:
             # Führe das SQL-Skript aus, um die Tabellen zu erstellen
-            subprocess.run(['psql', '-d', 'mitarbeiterportal', '-f', 'init_data_vault.sql'], check=True)
+            result = subprocess.run(['psql', '-d', 'mitarbeiterportal', '-f', 'init_data_vault.sql'], capture_output=True, text=True, check=True)
             print("Datenbank-Tabellen wurden erfolgreich erstellt.")
+            print("psql stdout:", result.stdout)
+            print("psql stderr:", result.stderr)
         else:
             print("Datenbank-Tabellen existieren bereits.")
             
     except subprocess.CalledProcessError as e:
         print(f"Fehler beim Erstellen der Tabellen: {e}")
+        print("psql stdout on error:", e.stdout)
+        print("psql stderr on error:", e.stderr)
     except Exception as e:
         print(f"Fehler bei der Datenbankinitialisierung: {e}")
     finally:
