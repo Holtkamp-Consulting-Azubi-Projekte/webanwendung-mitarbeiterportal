@@ -49,6 +49,14 @@ def login_user():
         
         # Überprüfe das Passwort
         print("Überprüfe Passwort...")
+        if user[7] is None:
+            print("Kein Passwort-Hash für Benutzer gefunden")
+            log_event('login_failed', user_id=user[1], details={'reason': 'no_password_hash'})
+            return jsonify({
+                'success': False,
+                'message': 'Kein Passwort für diesen Benutzer gespeichert. Bitte wenden Sie sich an den Administrator.'
+            }), 400
+
         if not check_password_hash(user[7], data['password']):  # password_hash ist das 8. Feld
             print("Falsches Passwort")
             log_event('login_failed', user_id=user[1], details={'reason': 'incorrect_password'})
@@ -135,5 +143,5 @@ def register_user():
         log_event('registration_failed', details={'reason': 'internal_error', 'email': data.get('email'), 'error': str(e)})
         return jsonify({
             'success': False,
-            'message': 'Ein interner Fehler ist bei der Registrierung aufgetreten.'
+            'message': 'Ein interner Fehler ist bei der Registrierung aufgetreten.\n' + str(e)
         }), 500
