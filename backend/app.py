@@ -38,7 +38,7 @@ jwt = JWTManager(app)
 app.register_blueprint(time_matrix_bp)
 
 # Initialisiere die Datenbank und erstelle die Tabellen
-#def init_db():
+def init_db():
     db = Database()
     try:
         # Prüfe, ob die Tabellen bereits existieren
@@ -65,7 +65,7 @@ app.register_blueprint(time_matrix_bp)
         db.close()
 
 # Rufe die Initialisierung auf
-init_db()
+#init_db()
 
 @app.route("/api/ping")  # Optional
 def ping():
