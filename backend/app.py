@@ -13,6 +13,7 @@ from datetime import datetime, UTC
 import json
 import os
 import subprocess
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Flask-Anwendung initialisieren
 app = Flask(__name__)
@@ -180,7 +181,6 @@ def change_password():
             return jsonify({"error": "Aktuelles Passwort ist falsch"}), 401
 
         # Neues Passwort hashen
-        from werkzeug.security import generate_password_hash
         new_password_hash = generate_password_hash(new_password)
 
         # Passwort aktualisieren
