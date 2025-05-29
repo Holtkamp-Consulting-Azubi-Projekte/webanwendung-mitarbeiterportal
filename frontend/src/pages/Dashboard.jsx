@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Dashboard` Seite.
  * Aktuell ein Platzhalter. Kann zukünftig Übersichts-Widgets oder Statistiken anzeigen.
