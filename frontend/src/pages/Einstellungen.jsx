@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Einstellungen` Seite.
  * Aktuell ein Platzhalter für zukünftige Benutzereinstellungen.

@@ -1,3 +1,5 @@
+import React from 'react';
+
 /**
  * `Projekte` Seite.
  * Aktuell ein Platzhalter für eine zukünftige Projektverwaltungsseite.

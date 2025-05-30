@@ -21,7 +21,7 @@ const Header = ({ onLogout }) => {
         {/* Navigation */}
         <nav className="hidden md:flex gap-10 text-sm text-base font-medium tracking-wide">
           <NavLink
-            to="/app/dashboard"
+            to="/app/"
             className={({ isActive }) =>
               isActive ? "text-primary font-bold" : "hover:text-primary"
             }

@@ -55,16 +55,6 @@ export default function App() {
         </PrivateRoute>
       } />
 
-      {/* Spezifische Route für das Dashboard, falls es ohne /app erreichbar sein soll, auch geschützt */}
-       <Route path="/dashboard" element={
-         <PrivateRoute>
-            {/* Übergabe von handleLogout an Layout */}
-           <Layout onLogout={handleLogout}>
-             <Dashboard />
-           </Layout>
-         </PrivateRoute>
-       } />
-
       {/* Optional: Fallback-Seite */}
       <Route path="*" element={<div className="p-8 text-red-600">Seite nicht gefunden</div>} />
     </Routes>
