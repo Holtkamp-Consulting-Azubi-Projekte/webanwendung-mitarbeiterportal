@@ -31,11 +31,12 @@ webanwendung-mitarbeiterportal/
 │   ├── app.py
 │   ├── auth.py
 │   ├── time_matrix.py
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── init_data_vault.sql # Nach backend/ verschoben
 ├── frontend/
 │   ├── src/
-│   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable
-│   │   ├── pages/        → Home, Login, Profil, Projekte, Zeiterfassung, Einstellungen
+│   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable, auth/
+│   │   ├── pages/        → LandingPage, Dashboard, Profil, Projekte, Zeitmatrix, Einstellungen
 │   │   └── styles/       → header.css, footer.css
 │   ├── public/
 │   └── package.json
@@ -51,42 +52,44 @@ webanwendung-mitarbeiterportal/
 ### 🔐 Benutzerverwaltung
 - [x] Registrierung mit Passwort-Hashing (Datenbank)
 - [x] Login mit JWT (JSON Web Token) (Datenbank)
-- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Rolle etc.) (Datenbank)
-- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung) (Datenbank)
+- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
+- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
 - [x] Geschützte Routen mit PrivateRoute-Komponente
 - [x] AuthModal für Login/Registrierung auf der LandingPage
 - [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
-- [x] Validierung der Benutzerdaten
+- [x] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [x] Zeitstempeln (Start/Ende) (Datenbank)
-- [x] Tages- & Wochenansicht (Datenbank)
-- [x] PDF-Export der Wochenübersicht
-- [x] Automatischer Versand (freitags 18 Uhr, geplant)
-- [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter)
-- [x] Spaltenreihenfolge angepasst (Datum vor Mitarbeiter)
-- [x] Gesamtarbeitszeit über der Tabelle platziert
-- [x] Filterzeile farblich hervorgehoben
-- [x] Monats-/Jahresauswahl (Dropdown für 2025)
+- [x] Anzeige der Zeitmatrix-Tabelle
+- [ ] Zeitstempeln (Start/Ende) (Datenbank)
+- [ ] Tages- & Wochenansicht (Datenbank) - **Implementierung in Zeitmatrix-Tabelle**
+- [ ] PDF-Export der Wochenübersicht
+- [ ] Automatischer Versand (geplant)
+- [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter) - **Implementierung in Zeitmatrix-Tabelle**
+- [x] Spaltenreihenfolge angepasst
+- [ ] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
+- [ ] Filterzeile farblich hervorgehoben - **Implementierung in Zeitmatrix-Tabelle**
+- [x] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
 - [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
 - [x] Integration der Zeitmatrix in das Hauptlayout
-- [x] Kernarbeitszeit-Integration in Zeiteinträge
-- [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
+- [ ] Kernarbeitszeit-Integration in Zeiteinträge - **Anzeige im Profil**
+- [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit - **Hinweis im TimeEntryModal**
 
 ### 👤 Profil
 - [x] Anzeige und Bearbeitung von Profildaten (Datenbank)
-- [x] Kernarbeitszeit-Einstellung mit Validierung
+- [x] Kernarbeitszeit-Einstellung mit grundlegender Validierung
 - [x] Standardprojekt-Auswahl (Datenbank)
 - [x] Passwortänderung (Datenbank)
 - [x] Telefonnummer und Position (Datenbank)
 
 ### 📁 Projektverwaltung
-- [x] Projekte anlegen, bearbeiten, löschen (Datenbank)
-- [x] Projektbezogene Zeiterfassung (Datenbank)
+- [x] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
+- [ ] Projekte anlegen, bearbeiten, löschen
+- [x] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
 - [x] Standardprojekt im Profil (Datenbank)
 
 ### ⚙️ Einstellungen
-- [x] Einstellungsseite mit Benutzeroptionen
+- [x] Einstellungsseite (Platzhalter)
 
 ---
 
@@ -96,7 +99,8 @@ webanwendung-mitarbeiterportal/
 |---------|------------------------|-----------------------------------------------|
 | POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück (DB) |
 | POST    | `/api/register`        | Neue Registrierung (DB)                       |
-| GET     | `/api/session`         | Aktuelle Session abfragen                    |
+| GET     | `/api/ping`            | Einfacher Health-Check                        |
+| GET     | `/api/status`          | Systemstatus für Healthcheck                  |
 | GET     | `/api/projects`        | Alle Projekte abrufen (DB)                   |
 | GET     | `/api/profile`         | Profildaten abrufen (DB)                     |
 | PUT     | `/api/profile`         | Profildaten aktualisieren (DB)                |
@@ -111,63 +115,55 @@ webanwendung-mitarbeiterportal/
 ## 🧑‍💻 Setup Anleitung
 
 ### Voraussetzungen
-- Node.js (v18+ empfohlen)
-- Python 3.10+
-- PostgreSQL-Server
-- Ports: `5173` (Frontend), `5050` (Backend)
+- Docker und Docker Compose
+- Git
 
-### Datenbank konfigurieren
-Die Backend-Anwendung verwendet Umgebungsvariablen für die Datenbankverbindung:
+### Einrichtung mit Docker Compose (Empfohlen)
 
-- `DB_HOST`: Hostname des Datenbankservers (Standard: `localhost`)
-- `DB_PORT`: Port des Datenbankservers (Standard: `********`)
-- `DB_NAME`: Name der Datenbank (Standard: `mitarbeiterportal`)
-- `DB_USER`: Benutzername für die Datenbankverbindung (Standard: `*****`)
-- `DB_PASSWORD`: Passwort für die Datenbankverbindung (Standard: `************`)
+1.  **Projekt klonen:**
+    ```bash
+    git clone <URL_ZU_IHREM_REPO>
+    cd webanwendung-mitarbeiterportal
+    ```
 
-Es wird empfohlen, diese Variablen in einer `.env`-Datei im `backend`-Verzeichnis zu setzen oder sie direkt im Terminal zu exportieren, bevor das Backend gestartet wird.
+2.  **Datenbank initialisieren und Dienste starten:**
+    Stellen Sie sicher, dass Sie sich im Hauptverzeichnis des geklonten Projekts befinden (dort, wo `docker-compose.yml` liegt).
+    ```bash
+    docker-compose up --build -d
+    ```
+    Dieser Befehl baut die Docker-Images (falls nötig), erstellt und startet die Container für Backend, Frontend und Datenbank. `-d` startet die Container im Hintergrund.
 
-Beispiel für `.env` im `backend`-Verzeichnis:
+3.  **Datenbank-Tabellen erstellen:**
+    Die Datenbankinitialisierung wird beim ersten Start des Backend-Containers automatisch ausgeführt, da der `psql`-Client im Dockerfile installiert ist und das `init_data_vault.sql` Skript beim Start von `app.py` ausgeführt wird.
+    Überprüfen Sie die Logs des Backend-Containers, um sicherzustellen, dass die Tabellen erfolgreich erstellt wurden:
+    ```bash
+    docker logs mitarbeiterportal-backend
+    ```
+    Suchen Sie nach der Meldung "Datenbank-Tabellen wurden erfolgreich erstellt." oder "Datenbank-Tabellen existieren bereits.".
 
-```env
-DB_HOST=localhost
-DB_PORT=12345
-DB_NAME=mitarbeiterportal
-DB_USER=admin
-DB_PASSWORD=password
-```
+4.  **Anwendung aufrufen:**
+    Nachdem die Container gestartet sind, ist das Frontend unter `http://localhost:3000` erreichbar.
 
-### Backend starten
+### Lokale Entwicklung (Alternative)
 
-Stellen Sie sicher, dass Ihre Datenbank läuft und die Umgebungsvariablen gesetzt sind.
+Für die lokale Entwicklung ohne Docker müssen Python und Node.js sowie eine PostgreSQL-Instanz separat eingerichtet werden. Beachten Sie, dass Unterschiede zur Docker-Umgebung auftreten können.
 
-```bash
-cd backend
-# Falls noch nicht geschehen:
-# python3 -m venv venv
-# source venv/bin/activate
-# pip install -r requirements.txt
-# pip install python-dotenv # Nötig, wenn .env-Datei verwendet wird
+**Backend:**
 
-# Umgebungsvariablen setzen (falls keine .env-Datei verwendet wird)
-# export DB_USER="*****"
-# export DB_PASSWORD="*****"
-# export DB_PORT="12345"
+1.  Navigieren Sie in das `backend`-Verzeichnis.
+2.  Richten Sie eine Python-Umgebung ein und installieren Sie die Abhängigkeiten (`pip install -r requirements.txt`).
+3.  Stellen Sie sicher, dass eine PostgreSQL-Datenbank läuft und die Verbindungsparameter (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD) als Umgebungsvariablen oder in einer `.env`-Datei gesetzt sind.
+4.  Führen Sie `python app.py` aus.
 
-python app.py
-```
+**Frontend:**
 
-### Frontend starten
+1.  Navigieren Sie in das `frontend`-Verzeichnis.
+2.  Installieren Sie die Node.js-Abhängigkeiten (`npm install`).
+3.  Führen Sie `npm run dev` aus.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+**Datenbank:**
 
-### Test
-- Frontend: [http://localhost:5173](http://localhost:5173)
-- Backend-Test: [http://localhost:5050/api/ping](http://localhost:5050/api/ping)
+Richten Sie eine lokale PostgreSQL-Instanz ein oder stellen Sie sicher, dass das lokal laufende Backend auf Ihre Datenbank auf dem Raspberry Pi zugreifen kann.
 
 ---
 
