@@ -101,7 +101,7 @@ export default function Profile() {
         return;
       }
 
-      const response = await axios.get('http://192.168.188.39:5050/api/profile', {
+      const response = await axios.get('/api/profile', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -128,7 +128,7 @@ export default function Profile() {
           // navigate('/login'); // Keine Weiterleitung hier, da es beim ersten Laden schon passiert
           return;
         }
-        const response = await axios.get('http://192.168.188.39:5050/api/projects', {
+        const response = await axios.get('/api/projects', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -215,22 +215,40 @@ export default function Profile() {
         navigate('/login');
         return;
       }
-      await axios.put('http://192.168.188.39:5050/api/profile', userData, {
+
+      // Kombiniere coreHoursStart und coreHoursEnd zu coreHours, falls vorhanden
+      const updatedCoreHours = (userData.coreHoursStart && userData.coreHoursEnd) 
+        ? `${userData.coreHoursStart}-${userData.coreHoursEnd}` 
+        : '';
+
+      // Backend erwartet diese Feldnamen
+      const userDataToUpdate = {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        position: userData.position,
+        coreHours: updatedCoreHours,
+        telefon: userData.telefon,
+        currentProject: userData.currentProject // Auch currentProject kann hier geupdated werden
+      };
+
+      await axios.put('/api/profile', userDataToUpdate, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         withCredentials: true
       });
-      setSuccess('Profil erfolgreich aktualisiert');
-      setIsEditing(false);
+      setSuccess('Profil erfolgreich aktualisiert!');
+      setIsEditing(false); // Bearbeitungsmodus verlassen nach erfolgreichem Speichern
+      // Fetch user data again to update the displayed information
+      fetchUserData();
     } catch (err) {
       if (err.response?.status === 401) {
         localStorage.removeItem('access_token');
         navigate('/login');
       } else {
-        setError('Fehler beim Speichern der Änderungen');
-        console.error('Fehler beim Speichern:', err);
+        setError('Fehler beim Aktualisieren des Profils.');
+        console.error('Fehler beim Aktualisieren des Profils:', err.response?.data || err);
       }
     }
   };
@@ -242,23 +260,24 @@ export default function Profile() {
     setPasswordSuccess('');
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('Neues Passwort und Bestätigung stimmen nicht überein.');
+      setPasswordError('Neue Passwörter stimmen nicht überein.');
       return;
     }
 
-    if (!currentPassword || !newPassword || !confirmNewPassword) {
-        setPasswordError('Bitte füllen Sie alle Passwortfelder aus.');
+    if (!currentPassword || !newPassword) {
+        setPasswordError('Aktuelles und neues Passwort müssen angegeben werden.');
         return;
     }
 
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        navigate('/login');
+    if (newPassword.length < 8) {
+        setPasswordError('Neues Passwort muss mindestens 8 Zeichen lang sein.');
         return;
-      }
+    }
 
-      await axios.put('http://192.168.188.39:5050/api/change-password', {
+    const token = localStorage.getItem('access_token');
+
+    try {
+      await axios.put('/api/change-password', {
         currentPassword: currentPassword,
         newPassword: newPassword
       }, {
@@ -268,15 +287,18 @@ export default function Profile() {
         },
         withCredentials: true
       });
-      setPasswordSuccess('Passwort erfolgreich geändert');
-      // Felder leeren nach erfolgreicher Änderung
+      setPasswordSuccess('Passwort erfolgreich geändert!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
 
     } catch (err) {
-      setPasswordError(err.response?.data?.error || 'Fehler beim Ändern des Passworts');
-      console.error('Fehler beim Passwort ändern:', err);
+      if (err.response?.status === 401) {
+          setPasswordError('Aktuelles Passwort ist falsch.');
+      } else {
+          setPasswordError('Fehler beim Ändern des Passworts.');
+          console.error('Fehler beim Ändern des Passworts:', err.response?.data || err);
+      }
     }
   };
 

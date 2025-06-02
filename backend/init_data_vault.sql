@@ -1,13 +1,13 @@
 -- Backup der bestehenden Daten
-CREATE TABLE backup_h_user AS SELECT * FROM h_user;
-CREATE TABLE backup_h_project AS SELECT * FROM h_project;
-CREATE TABLE backup_l_user_project_timeentry AS SELECT * FROM l_user_project_timeentry;
-CREATE TABLE backup_s_user_details AS SELECT * FROM s_user_details;
-CREATE TABLE backup_s_user_login AS SELECT * FROM s_user_login;
-CREATE TABLE backup_s_project_details AS SELECT * FROM s_project_details;
-CREATE TABLE backup_s_timeentry_details AS SELECT * FROM s_timeentry_details;
-CREATE TABLE backup_s_user_current_project AS SELECT * FROM s_user_current_project;
-CREATE TABLE backup_app_logs AS SELECT * FROM app_logs;
+-- CREATE TABLE backup_h_user AS SELECT * FROM h_user;
+-- CREATE TABLE backup_h_project AS SELECT * FROM h_project;
+-- CREATE TABLE backup_l_user_project_timeentry AS SELECT * FROM l_user_project_timeentry;
+-- CREATE TABLE backup_s_user_details AS SELECT * FROM s_user_details;
+-- CREATE TABLE backup_s_user_login AS SELECT * FROM s_user_login;
+-- CREATE TABLE backup_s_project_details AS SELECT * FROM s_project_details;
+-- CREATE TABLE backup_s_timeentry_details AS SELECT * FROM s_timeentry_details;
+-- CREATE TABLE backup_s_user_current_project AS SELECT * FROM s_user_current_project;
+-- CREATE TABLE backup_app_logs AS SELECT * FROM app_logs;
 
 -- Löschen der bestehenden Tabellen (in korrekter Reihenfolge wegen Fremdschlüssel)
 DROP TABLE IF EXISTS s_timeentry_details CASCADE;
@@ -150,23 +150,23 @@ CREATE TABLE APP_LOGS (
 );
 
 -- Wiederherstellung der Daten
-INSERT INTO h_user SELECT * FROM backup_h_user;
-INSERT INTO h_project SELECT * FROM backup_h_project;
-INSERT INTO l_user_project_timeentry SELECT * FROM backup_l_user_project_timeentry;
-INSERT INTO s_user_details SELECT * FROM backup_s_user_details;
-INSERT INTO s_user_login SELECT * FROM backup_s_user_login;
-INSERT INTO s_project_details SELECT * FROM backup_s_project_details;
-INSERT INTO s_timeentry_details SELECT * FROM backup_s_timeentry_details;
-INSERT INTO s_user_current_project SELECT * FROM backup_s_user_current_project;
-INSERT INTO app_logs SELECT * FROM backup_app_logs;
+-- INSERT INTO h_user SELECT * FROM backup_h_user;
+-- INSERT INTO h_project SELECT * FROM backup_h_project;
+-- INSERT INTO l_user_project_timeentry SELECT * FROM backup_l_user_project_timeentry;
+-- INSERT INTO s_user_details SELECT * FROM backup_s_user_details;
+-- INSERT INTO s_user_login SELECT * FROM backup_s_user_login;
+-- INSERT INTO s_project_details SELECT * FROM backup_s_project_details;
+-- INSERT INTO s_timeentry_details SELECT * FROM backup_s_timeentry_details;
+-- INSERT INTO s_user_current_project SELECT * FROM backup_s_user_current_project;
+-- INSERT INTO app_logs SELECT * FROM backup_app_logs;
 
 -- Aufräumen der Backup-Tabellen
-DROP TABLE backup_h_user;
-DROP TABLE backup_h_project;
-DROP TABLE backup_l_user_project_timeentry;
-DROP TABLE backup_s_user_details;
-DROP TABLE backup_s_user_login;
-DROP TABLE backup_s_project_details;
-DROP TABLE backup_s_timeentry_details;
-DROP TABLE backup_s_user_current_project;
-DROP TABLE backup_app_logs;
+-- DROP TABLE backup_h_user;
+-- DROP TABLE backup_h_project;
+-- DROP TABLE backup_l_user_project_timeentry;
+-- DROP TABLE backup_s_user_details;
+-- DROP TABLE backup_s_user_login;
+-- DROP TABLE backup_s_project_details;
+-- DROP TABLE backup_s_timeentry_details;
+-- DROP TABLE backup_s_user_current_project;
+-- DROP TABLE backup_app_logs;
