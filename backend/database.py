@@ -112,19 +112,26 @@ class Database:
             raise
 
     def get_user_by_email(self, email):
-        """Holt einen Benutzer anhand der E-Mail-Adresse."""
-        return self.fetch_one(
-            """
-            SELECT h.hk_user, h.user_id, 
-                   d.first_name, d.last_name, d.position, d.core_hours, d.telefon,
-                   l.password_hash
-            FROM h_user h
-            LEFT JOIN s_user_details d ON d.hk_user = h.hk_user AND d.t_to IS NULL
-            LEFT JOIN s_user_login l ON l.hk_user = h.hk_user AND l.t_to IS NULL
-            WHERE h.user_id = %s
-            """,
-            (email,)
-        )
+        sql = """
+              SELECT
+                u.hk_user,
+                u.email,
+                d.first_name,
+                d.last_name,
+                d.position,
+                d.core_hours,
+                d.telefon,
+                u.password_hash,     
+                encode(cp.hk_project, 'hex') AS current_project
+              FROM h_user u
+              JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
+              LEFT JOIN s_user_current_project cp ON cp.hk_user = u.hk_user AND cp.t_to IS NULL
+              WHERE u.email = %s
+              """
+        with self.conn.cursor() as cur:
+            cur.execute(sql, (email,))
+            return cur.fetchone()
+
 
     def update_user_details(self, hk_user, update_data):
         """Aktualisiert die Benutzerdetails."""

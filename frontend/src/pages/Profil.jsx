@@ -379,8 +379,10 @@ export default function Profile() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                 >
                   <option value="">Projekt auswählen</option>
-                  {projects.map((project, index) => (
-                    <option key={index} value={project}>{project}</option>
+                  {projects.map((project) => (
+                    <option key={project.hk_project} value={project.hk_project}>
+                      {project.project_name}
+                    </option>
                   ))}
                 </select>
               </div>

@@ -145,7 +145,9 @@ def profile():
                     'email': user[1],
                     'position': user[4],
                     'coreHours': user[5],
-                    'telefon': user[6]
+                    'telefon': user[6],
+                    'passwordHash': user[7],
+                    'currentProject': user[8]
                 }
                 return jsonify(user_data), 200
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
@@ -154,6 +156,8 @@ def profile():
             if not user:
                 return jsonify({"error": "Benutzer nicht gefunden"}), 404
             update_data = request.json
+            if "currentProject" in update_data:
+                update_data["current_project"] = update_data.pop("currentProject")
             db.update_user_details(user[0], update_data)
             return jsonify({"message": "Profil erfolgreich aktualisiert"}), 200
     except Exception as e:
