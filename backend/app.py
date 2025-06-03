@@ -8,6 +8,7 @@ from flask_cors import CORS
 from auth import register_user, login_user
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager, get_jwt_identity
 from time_matrix import time_matrix_bp
+from project import project_bp
 from database import Database
 from datetime import datetime, UTC
 import json
@@ -36,6 +37,9 @@ jwt = JWTManager(app)
 
 # Zeitmatrix-Blueprint registrieren
 app.register_blueprint(time_matrix_bp)
+
+# Projekt-Blueprint registrieren
+app.register_blueprint(project_bp)
 
 # Initialisiere die Datenbank und erstelle die Tabellen
 def init_db():

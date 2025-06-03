@@ -40,6 +40,14 @@ CREATE TABLE H_PROJECT (
     REC_SRC VARCHAR(255) NOT NULL       -- Quelle des Datensatzes
 );
 
+-- Hub für Kunden
+CREATE TABLE H_CUSTOMER (
+    HK_CUSTOMER BYTEA PRIMARY KEY,              -- Hash Key, z. B. SHA-256 Hash vom Kundennamen
+    CUSTOMER_NAME VARCHAR(255) UNIQUE NOT NULL, -- Name des Kunden
+    T_FROM TIMESTAMP NOT NULL,                  -- Technischer Gültigkeitsbeginn
+    REC_SRC VARCHAR(255) NOT NULL               -- Quelle des Datensatzes
+);
+
 -- Link, der Benutzer, Projekt und Zeiteintrag verbindet
 -- Links enthalten typischerweise keine fachlichen Attribute und sind selten bitemporal
 CREATE TABLE L_USER_PROJECT_TIMEENTRY (
@@ -89,18 +97,25 @@ CREATE TABLE S_USER_LOGIN (
     FOREIGN KEY (HK_USER) REFERENCES H_USER(HK_USER)
 );
 
--- Satellite für Projektdetails (bitemporal)
+-- Satellite für Projektdetails (bitemporal, erweitert für Verwaltungsseite)
 CREATE TABLE S_PROJECT_DETAILS (
-    HK_PROJECT BYTEA NOT NULL, -- Fremdschlüssel zu H_PROJECT
-    T_FROM TIMESTAMP NOT NULL,     -- Technischer Gültigkeitsbeginn (Teil des Primary Key)
-    T_TO TIMESTAMP NULL,           -- Technisches Gültigkeitsende
-    B_FROM DATE NOT NULL,          -- Fachlicher Gültigkeitsbeginn
-    B_TO DATE NULL,                -- Fachliches Gültigkeitsende
-    REC_SRC VARCHAR(255) NOT NULL,   -- Quelle des Datensatzes
-    PROJECT_NAME VARCHAR(255) NOT NULL, -- Redundant zum Hub, aber praktisch für Historisierung
+    HK_PROJECT BYTEA NOT NULL,         -- Fremdschlüssel zu H_PROJECT
+    T_FROM TIMESTAMP NOT NULL,         -- Technischer Gültigkeitsbeginn (Teil des Primary Key)
+    T_TO TIMESTAMP NULL,               -- Technisches Gültigkeitsende
+    B_FROM DATE NOT NULL,              -- Fachlicher Gültigkeitsbeginn
+    B_TO DATE NULL,                    -- Fachliches Gültigkeitsende
+    REC_SRC VARCHAR(255) NOT NULL,     -- Quelle des Datensatzes
+    PROJECT_NAME VARCHAR(255) NOT NULL,-- Redundant zum Hub, für Historisierung
 
-    PRIMARY KEY (HK_PROJECT, T_FROM), -- Primärschlüssel für Historisierung
-    FOREIGN KEY (HK_PROJECT) REFERENCES H_PROJECT(HK_PROJECT)
+    DESCRIPTION TEXT,                  -- Beschreibung des Projekts
+    CUSTOMER_ID BYTEA,                 -- Fremdschlüssel zu H_CUSTOMER
+    START_DATE DATE,                   -- Projektstart
+    END_DATE DATE,                     -- Projektende (NULL = offen)
+    BUDGET_DAYS INTEGER,               -- Budget in Tagen
+
+    PRIMARY KEY (HK_PROJECT, T_FROM),
+    FOREIGN KEY (HK_PROJECT) REFERENCES H_PROJECT(HK_PROJECT),
+    FOREIGN KEY (CUSTOMER_ID) REFERENCES H_CUSTOMER(HK_CUSTOMER)
 );
 
 -- Satellite für Zeiteintrag-Details (bitemporal)
@@ -137,6 +152,20 @@ CREATE TABLE S_USER_CURRENT_PROJECT (
     PRIMARY KEY (HK_USER, T_FROM), -- Primärschlüssel für Historisierung
     FOREIGN KEY (HK_USER) REFERENCES H_USER(HK_USER),
     FOREIGN KEY (HK_PROJECT) REFERENCES H_PROJECT(HK_PROJECT)
+);
+
+-- Satellite für Kundendetails (bitemporal)
+CREATE TABLE S_CUSTOMER_DETAILS (
+    HK_CUSTOMER BYTEA NOT NULL,                 -- Fremdschlüssel zum Hub
+    T_FROM TIMESTAMP NOT NULL,                  -- Technischer Gültigkeitsbeginn
+    T_TO TIMESTAMP NULL,                        -- Technisches Gültigkeitsende
+    B_FROM DATE NOT NULL,                       -- Fachlicher Gültigkeitsbeginn
+    B_TO DATE NULL,                             -- Fachliches Gültigkeitsende
+    REC_SRC VARCHAR(255) NOT NULL,              -- Quelle des Datensatzes
+    ADDRESS VARCHAR(255),                       -- Adresse des Kunden
+    CONTACT_PERSON VARCHAR(255),                -- Ansprechpartner
+    PRIMARY KEY (HK_CUSTOMER, T_FROM),
+    FOREIGN KEY (HK_CUSTOMER) REFERENCES H_CUSTOMER(HK_CUSTOMER)
 );
 
 -- Tabelle für Anwendungs-Logs
