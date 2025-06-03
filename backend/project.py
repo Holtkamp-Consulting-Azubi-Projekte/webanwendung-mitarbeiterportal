@@ -1,8 +1,21 @@
 from flask import Blueprint, request, jsonify, current_app as app
 import psycopg2
 import hashlib
+from datetime import datetime
 
 project_bp = Blueprint("project", __name__)
+
+def parse_date(date_str):
+    if not date_str or date_str.strip() == "":
+        return None
+    try:
+        # Akzeptiert beide Formate: "YYYY-MM-DD" (ISO) und "DD.MM.YYYY" (deutsch)
+        if "-" in date_str:
+            return date_str  # schon korrektes Format
+        return datetime.strptime(date_str, "%d.%m.%Y").strftime("%Y-%m-%d")
+    except Exception as e:
+        print("Datum konnte nicht geparst werden:", date_str, e)
+        return None
 
 def get_db_conn():
     return psycopg2.connect(
@@ -12,9 +25,11 @@ def get_db_conn():
         password=app.config["DB_PASSWORD"],
     )
 
-# Helper für SHA256
 def hash_hex(value):
     return hashlib.sha256(value.encode()).hexdigest()
+
+def none_if_empty(val):
+    return val if val not in ("", None) else None
 
 # --- Projekte auflisten (nur aktuelle Satelliten) ---
 @project_bp.route("/api/projects", methods=["GET"])
@@ -52,6 +67,11 @@ def get_projects():
 @project_bp.route("/api/projects", methods=["POST"])
 def create_project():
     data = request.json
+    print("Request JSON:", data)
+    start_date = parse_date(data.get("start_date"))
+    end_date = parse_date(data.get("end_date"))
+    budget_days = data.get("budget_days") or None
+
     conn = get_db_conn()
     cur = conn.cursor()
     # Projekt-Hash (im Frontend erzeugt, sonst hier)
@@ -77,9 +97,9 @@ def create_project():
         data["project_name"],
         data.get("description"),
         customer_id,
-        data.get("start_date"),
-        data.get("end_date"),
-        data.get("budget_days"),
+        start_date,   # hier das vorbereitete start_date
+        end_date,     # hier das vorbereitete end_date
+        budget_days
     ))
     conn.commit()
     cur.close()
@@ -112,9 +132,9 @@ def edit_project(hk_project):
         data["project_name"],
         data.get("description"),
         data["customer_id"],
-        data.get("start_date"),
-        data.get("end_date"),
-        data.get("budget_days"),
+        none_if_empty(data.get("start_date")),
+        none_if_empty(data.get("end_date")),
+        none_if_empty(data.get("budget_days")),
     ))
     conn.commit()
     cur.close()
@@ -135,43 +155,3 @@ def delete_project(hk_project):
     cur.close()
     conn.close()
     return jsonify({"status": "deleted"})
-
-# --- Kunden auflisten ---
-@project_bp.route("/api/customers", methods=["GET"])
-def get_customers():
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT encode(hk_customer, 'hex') AS hk_customer, customer_name
-        FROM h_customer
-        ORDER BY customer_name
-    """)
-    customers = [{"hk_customer": r[0], "customer_name": r[1]} for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-    return jsonify(customers)
-
-# --- Kunden anlegen ---
-@project_bp.route("/api/customers", methods=["POST"])
-def add_customer():
-    data = request.json
-    hk_customer = hash_hex(data["customer_name"])
-    conn = get_db_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO h_customer (hk_customer, customer_name, t_from, rec_src)
-        VALUES (decode(%s, 'hex'), %s, NOW(), 'API')
-        ON CONFLICT DO NOTHING
-    """, (hk_customer, data["customer_name"]))
-    cur.execute("""
-        INSERT INTO s_customer_details (hk_customer, t_from, b_from, rec_src, address, contact_person)
-        VALUES (decode(%s, 'hex'), NOW(), CURRENT_DATE, 'API', %s, %s)
-    """, (
-        hk_customer,
-        data.get("address"),
-        data.get("contact_person")
-    ))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return jsonify({"hk_customer": hk_customer, "customer_name": data["customer_name"]})

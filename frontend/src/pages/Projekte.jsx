@@ -3,6 +3,7 @@ import ProjectTable from "../components/projects/ProjectTable";
 import ProjectForm from "../components/projects/ProjectForm";
 import EditProjectModal from "../components/projects/EditProjectModal";
 import CustomerForm from "../components/projects/CustomerForm";
+import KundenVerwaltungModal from "../components/projects/KundenVerwaltungModal";
 import Button from "../components/Button";
 
 export default function Projekte() {
@@ -10,6 +11,8 @@ export default function Projekte() {
   const [kunden, setKunden] = useState([]);
   const [editProjekt, setEditProjekt] = useState(null);
   const [showAddKunde, setShowAddKunde] = useState(false);
+  const [showKundenVerwaltung, setShowKundenVerwaltung] = useState(false);
+
   const LEERES_PROJEKT = {
     project_name: "",
     customer_id: "",
@@ -18,7 +21,6 @@ export default function Projekte() {
     end_date: "",
     budget_days: ""
   };
-  
 
   // Projekte laden
   function ladeProjekte() {
@@ -58,18 +60,27 @@ export default function Projekte() {
     // Optional: Neuen Kunden im Projekt-Formular auswählen (als State)
   }
 
+  // Kunden nach Löschvorgang erneut laden (per Callback an Modal)
+  function handleKundenUpdate() {
+    ladeKunden();
+  }
+
   return (
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-2xl shadow-xl">
       <h1 className="text-2xl font-bold mb-6 text-primary">Projektverwaltung</h1>
       
       <ProjectForm 
-       initialValues={LEERES_PROJEKT}
-       kunden={kunden} 
+        initialValues={LEERES_PROJEKT}
+        kunden={kunden} 
+        onSubmit={handleProjektAnlegen}
       />
       
       <div className="mb-4 flex gap-2">
         <Button type="button" onClick={() => setShowAddKunde(true)}>
           + Neuen Kunden anlegen
+        </Button>
+        <Button type="button" onClick={() => setShowKundenVerwaltung(true)}>
+          Kunden verwalten
         </Button>
       </div>
       
@@ -96,6 +107,13 @@ export default function Projekte() {
           handleKundeAdded(kunde);
           setShowAddKunde(false);
         }}
+      />
+
+      {/* Modal: Kunden verwalten */}
+      <KundenVerwaltungModal
+        open={showKundenVerwaltung}
+        onClose={() => setShowKundenVerwaltung(false)}
+        onUpdate={handleKundenUpdate}
       />
     </div>
   );

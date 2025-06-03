@@ -52,3 +52,19 @@ def add_customer():
     cur.close()
     conn.close()
     return jsonify({"hk_customer": hk_customer, "customer_name": data["customer_name"]})
+
+@customer_bp.route("/api/customers/<hk_customer>", methods=["DELETE"])
+def delete_customer(hk_customer):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM h_customer WHERE encode(hk_customer, 'hex') = %s", (hk_customer,))
+        conn.commit()
+        return jsonify({"message": "Kunde gelöscht"}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
