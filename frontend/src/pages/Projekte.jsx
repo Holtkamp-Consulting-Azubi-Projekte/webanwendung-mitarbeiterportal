@@ -1,49 +1,99 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import ProjectTable from "../components/projects/ProjectTable";
+import ProjectForm from "../components/projects/ProjectForm";
+import EditProjectModal from "../components/projects/EditProjectModal";
+import CustomerForm from "../components/projects/CustomerForm";
+import Button from "../components/Button";
 
 export default function Projekte() {
   const [projekte, setProjekte] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [kunden, setKunden] = useState([]);
+  const [editProjekt, setEditProjekt] = useState(null);
+  const [showAddKunde, setShowAddKunde] = useState(false);
+  const LEERES_PROJEKT = {
+    project_name: "",
+    customer_id: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    budget_days: ""
+  };
+  
+
+  // Projekte laden
+  function ladeProjekte() {
+    fetch("/api/projects")
+      .then(res => res.json())
+      .then(setProjekte);
+  }
+
+  // Kunden laden
+  function ladeKunden() {
+    fetch("/api/customers")
+      .then(res => res.json())
+      .then(setKunden);
+  }
 
   useEffect(() => {
-    fetch("/api/projects")
-      .then((res) => res.json())
-      .then((data) => {
-        setProjekte(data);
-        setLoading(false);
-      });
+    ladeProjekte();
+    ladeKunden();
   }, []);
+
+  // Projekt anlegen (Formular oben)
+  function handleProjektAnlegen(form) {
+    fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form)
+    })
+      .then(res => res.json())
+      .then(() => {
+        ladeProjekte();
+      });
+  }
+
+  // Nach Anlage Kunde: Liste aktualisieren + ggf. für Dropdown setzen
+  function handleKundeAdded(kunde) {
+    setKunden(kunden => [...kunden, kunde]);
+    // Optional: Neuen Kunden im Projekt-Formular auswählen (als State)
+  }
 
   return (
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-2xl shadow-xl">
-      <h1 className="text-2xl font-bold mb-6">Projektverwaltung</h1>
-      {loading ? (
-        <p>Lade Projekte...</p>
-      ) : (
-        <table className="w-full table-auto border">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 text-left">Projektname</th>
-              <th className="p-2 text-left">Kunde</th>
-              <th className="p-2 text-left">Start</th>
-              <th className="p-2 text-left">Ende</th>
-              <th className="p-2 text-left">Budget (Tage)</th>
-              <th className="p-2 text-left">Beschreibung</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projekte.map((projekt) => (
-              <tr key={projekt.hk_project} className="border-t">
-                <td className="p-2">{projekt.project_name}</td>
-                <td className="p-2">{projekt.customer_name}</td>
-                <td className="p-2">{projekt.start_date ?? "-"}</td>
-                <td className="p-2">{projekt.end_date ?? "-"}</td>
-                <td className="p-2">{projekt.budget_days ?? "-"}</td>
-                <td className="p-2">{projekt.description ?? "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <h1 className="text-2xl font-bold mb-6 text-primary">Projektverwaltung</h1>
+      
+      <ProjectForm initialValues={LEERES_PROJEKT}/>
+      
+      <div className="mb-4 flex gap-2">
+        <Button type="button" onClick={() => setShowAddKunde(true)}>
+          + Neuen Kunden anlegen
+        </Button>
+      </div>
+      
+      <ProjectTable
+        projekte={projekte}
+        onEdit={setEditProjekt}
+      />
+
+      {/* Modal: Projekt bearbeiten/löschen */}
+      <EditProjectModal
+        open={!!editProjekt}
+        projekt={editProjekt}
+        kunden={kunden}
+        onClose={() => setEditProjekt(null)}
+        onUpdate={ladeProjekte}
+        onDelete={ladeProjekte}
+      />
+
+      {/* Modal: Kunden anlegen */}
+      <CustomerForm
+        open={showAddKunde}
+        onClose={() => setShowAddKunde(false)}
+        onAdded={kunde => {
+          handleKundeAdded(kunde);
+          setShowAddKunde(false);
+        }}
+      />
     </div>
   );
 }

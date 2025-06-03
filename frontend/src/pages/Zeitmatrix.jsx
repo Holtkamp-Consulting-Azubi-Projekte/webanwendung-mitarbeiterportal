@@ -4,7 +4,7 @@ import TimeEntryModal from "../components/TimeEntryModal";
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = "/api/time-entries/";
+const API_URL = "/api/time-entries";
 const PROFILE_API_URL = "/api/profile"; // API-URL für Profil
 
 // Temporäre Liste von Projekten für Testzwecke (könnte vom Backend kommen)

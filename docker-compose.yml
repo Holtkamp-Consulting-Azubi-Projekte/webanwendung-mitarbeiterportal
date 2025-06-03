@@ -12,8 +12,12 @@ services:
     depends_on:
       - db
     environment:
-      - FLASK_ENV=production
-      - DATABASE_URL=postgresql://admin:secret@db:5432/mitarbeiterportal
+    - FLASK_ENV=production
+    - DATABASE_URL=postgresql://admin:secret@db:5432/mitarbeiterportal
+    - DB_HOST=db
+    - DB_NAME=mitarbeiterportal
+    - DB_USER=admin
+    - DB_PASSWORD=secret
     networks:
       - mitarbeiterportal-network
     restart: always

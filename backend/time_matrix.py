@@ -17,7 +17,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-time_matrix_bp = Blueprint('time_matrix', __name__, url_prefix='/api/time-entries')
+time_matrix_bp = Blueprint('time_matrix', __name__)
 
 def validate_time_entry(entry):
     """
@@ -74,7 +74,7 @@ def validate_time_entry(entry):
 
     return len(errors) == 0, errors
 
-@time_matrix_bp.route('/', methods=['GET'])
+@time_matrix_bp.route("/api/time-entries", methods=["GET"])
 @jwt_required()
 def get_entries():
     logger.info("GET request received for time entries")
@@ -127,7 +127,7 @@ def get_entries():
     finally:
         db.close()
 
-@time_matrix_bp.route('/', methods=['POST'])
+@time_matrix_bp.route("/api/time-entries", methods=["POST"])
 @jwt_required()
 def add_entry():
     logger.info("POST request received for time entry")
@@ -239,7 +239,7 @@ def add_entry():
     finally:
         db.close()
 
-@time_matrix_bp.route('/<entry_id>', methods=['PUT'])
+@time_matrix_bp.route("/api/time-entries/<int:entry_id>", methods=["PUT"])
 @jwt_required()
 def update_entry(entry_id):
     logger.info(f"PUT request received for time entry ID: {entry_id}")
