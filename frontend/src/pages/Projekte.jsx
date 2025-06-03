@@ -62,7 +62,10 @@ export default function Projekte() {
     <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-2xl shadow-xl">
       <h1 className="text-2xl font-bold mb-6 text-primary">Projektverwaltung</h1>
       
-      <ProjectForm initialValues={LEERES_PROJEKT}/>
+      <ProjectForm 
+       initialValues={LEERES_PROJEKT}
+       kunden={kunden} 
+      />
       
       <div className="mb-4 flex gap-2">
         <Button type="button" onClick={() => setShowAddKunde(true)}>
