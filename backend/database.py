@@ -113,21 +113,22 @@ class Database:
 
     def get_user_by_email(self, email):
         sql = """
-              SELECT
+            SELECT
                 u.hk_user,
-                u.email,
+                u.user_id,
                 d.first_name,
                 d.last_name,
                 d.position,
                 d.core_hours,
                 d.telefon,
-                u.password_hash,     
+                l.password_hash,     
                 encode(cp.hk_project, 'hex') AS current_project
-              FROM h_user u
-              JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
-              LEFT JOIN s_user_current_project cp ON cp.hk_user = u.hk_user AND cp.t_to IS NULL
-              WHERE u.email = %s
-              """
+            FROM h_user u
+            JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
+            JOIN s_user_login l ON u.hk_user = l.hk_user  -- NEU: join auf Login-Tabelle
+            LEFT JOIN s_user_current_project cp ON cp.hk_user = u.hk_user AND cp.t_to IS NULL
+            WHERE u.user_id = %s
+        """
         with self.conn.cursor() as cur:
             cur.execute(sql, (email,))
             return cur.fetchone()

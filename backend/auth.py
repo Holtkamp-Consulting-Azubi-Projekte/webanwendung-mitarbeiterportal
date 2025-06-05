@@ -5,6 +5,7 @@ from datetime import datetime
 from log import log_event
 from database import Database
 import hashlib
+import traceback
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -116,6 +117,7 @@ def login():
         }), 200
     except Exception as e:
         print(f"Fehler beim Login: {e}")
+        traceback.print_exc()
         log_event('login_failed', details={'reason': 'internal_error', 'error': str(e)})
         return jsonify({
             'success': False,
