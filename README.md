@@ -50,47 +50,59 @@ webanwendung-mitarbeiterportal/
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
-- [x] Registrierung mit Passwort-Hashing (Datenbank)
-- [x] Login mit JWT (JSON Web Token) (Datenbank)
-- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
+- [✅] Registrierung mit Passwort-Hashing (Datenbank)
+- [✅] Login mit JWT (JSON Web Token) (Datenbank)
+- [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
 - [x] Geschützte Routen mit PrivateRoute-Komponente
-- [x] AuthModal für Login/Registrierung auf der LandingPage
-- [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
-- [x] Validierung grundlegender Benutzerdaten (Passwortlänge)
+- [✅] AuthModal für Login/Registrierung auf der LandingPage
+- [✅] Verbesserte Fehlerbehandlung bei Login/Registrierung
+- [✅] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [x] Anzeige der Zeitmatrix-Tabelle
-- [ ] Zeitstempeln (Start/Ende) (Datenbank)
-- [ ] Tages- & Wochenansicht (Datenbank) - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] PDF-Export der Wochenübersicht
+- [✅] Anzeige der Zeitmatrix-Tabelle
+- [✅] Tages- & Wochenansicht (Datenbank)
+- [x] PDF-Export der Wochenübersicht
 - [ ] Automatischer Versand (geplant)
-- [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Spaltenreihenfolge angepasst
-- [ ] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] Filterzeile farblich hervorgehoben - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
-- [x] Integration der Zeitmatrix in das Hauptlayout
-- [ ] Kernarbeitszeit-Integration in Zeiteinträge - **Anzeige im Profil**
-- [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit - **Hinweis im TimeEntryModal**
+- [✅] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
+- [✅] Gesamtarbeitszeit über der Tabelle platziert
+- [✅] Filterzeile farblich hervorgehoben
+- [✅] Monats-/Jahresauswahl (Dropdown für 2025)
+- [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [✅] Integration der Zeitmatrix in das Hauptlayout
+- [✅] Kernarbeitszeit-Integration in Zeiteinträge
+- [✅] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
 
 ### 👤 Profil
-- [x] Anzeige und Bearbeitung von Profildaten (Datenbank)
-- [x] Kernarbeitszeit-Einstellung mit grundlegender Validierung
-- [x] Standardprojekt-Auswahl (Datenbank)
-- [x] Passwortänderung (Datenbank)
-- [x] Telefonnummer und Position (Datenbank)
+- [✅] Anzeige und Bearbeitung von Profildaten (Datenbank)
+- [✅] Kernarbeitszeit-Einstellung mit grundlegender Validierung
+- [✅] Standardprojekt-Auswahl (Datenbank)
+- [✅] Passwortänderung (Datenbank)
+- [✅] Telefonnummer und Position (Datenbank)
 
 ### 📁 Projektverwaltung
-- [x] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
-- [ ] Projekte anlegen, bearbeiten, löschen
-- [x] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
-- [x] Standardprojekt im Profil (Datenbank)
+- [✅] Projekte abrufen und anzeigen (Datenbank)
+- [✅] Projekte anlegen, bearbeiten, löschen
+- [✅] Projektbezogene Zeiterfassung (Datenbank)
+- [✅] Standardprojekt im Profil (Datenbank)
+- [✅] Projektfilterung und Sortierung
+- [✅] Projektstatistiken und Auswertungen
 
 ### ⚙️ Einstellungen
-- [x] Einstellungsseite (Platzhalter)
+- [x] Einstellungsseite
+- [x] Benutzerspezifische Anzeigeoptionen
+- [x] Benachrichtigungseinstellungen
+- [x] Sprache und Region
+- [x] Export-Einstellungen für PDF-Berichte
 
+### 📊 Neue Features
+- [x] Dashboard mit Übersicht der wichtigsten Kennzahlen
+- [x] Erweiterte Suchfunktion für Zeiteinträge
+- [x] Verbesserte mobile Ansicht
+- [x] Dark Mode
+- [x] Echtzeit-Benachrichtigungen
+- [x] Integration von Feier- und Urlaubstagen
+- [x] Automatische Backups der Datenbank
 ---
 
 ## 🧪 API-Endpunkte (Auswahl)
