@@ -23,7 +23,6 @@ jwt = JWTManager(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(customer_bp)
 app.register_blueprint(project_bp)
-app.register_blueprint(time_matrix_bp)
 
 # KEINE Auth-Routen mehr direkt in dieser Datei!
 # Nur noch ggf. einen einfachen Root-Endpoint:

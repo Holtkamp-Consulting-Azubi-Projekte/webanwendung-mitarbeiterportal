@@ -91,7 +91,7 @@ def get_entries():
         # Hole alle Zeiteinträge für diesen Benutzer
         entries = db.fetch_all(
             """
-            SELECT l.timeentry_id, s.entry_date, s.start_time, s.end_time, s.pause_minutes, s.work_location, s.description, p.project_name,
+            SELECT l.timeentry_id, s.entry_date, s.start_time, s.end_time, s.pause_minutes, s.work_location, s.description, p.hk_project,
                    d.first_name, d.last_name
             FROM l_user_project_timeentry l
             JOIN s_timeentry_details s ON s.hk_user_project_timeentry = l.hk_user_project_timeentry AND s.t_to IS NULL
@@ -115,7 +115,7 @@ def get_entries():
                 'pause': entry[4], # pause_minutes
                 'arbeitsort': entry[5], # work_location
                 'beschreibung': entry[6], # description
-                'projekt': [entry[7]], # project_name (als Liste, um Kompatibilität zu wahren)
+                'projekt': [entry[7].hex()], # <-- Projekt-ID als Hex-String im Array!
                 'mitarbeiter': f"{entry[8]} {entry[9]}" # first_name, last_name
             })
 
@@ -155,40 +155,20 @@ def add_entry():
         hk_user = user[0] # hk_user
 
         # Hole oder erstelle das Projekt
-        project_name = data['projekt'][0] if data.get('projekt') and len(data['projekt']) > 0 else None
-        if not project_name:
+        project_id = data['projekt'][0] if data.get('projekt') and len(data['projekt']) > 0 else None
+        if not project_id:
             db.rollback()
-            return jsonify({'error': 'Projektname fehlt'}), 400
+            return jsonify({'error': 'Projekt-ID fehlt'}), 400
 
         project = db.fetch_one(
-            "SELECT hk_project FROM h_project WHERE project_name = %s",
-            (project_name,)
+            "SELECT hk_project FROM h_project WHERE hk_project = %s",
+            (bytes.fromhex(project_id),)
         )
+        if not project:
+            db.rollback()
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
 
-        hk_project = None
-        if project:
-            hk_project = project[0]
-        else:
-            # Projekt existiert nicht, erstelle es
-            hk_project = hashlib.sha256(project_name.encode()).digest()
-            now = datetime.utcnow()
-            today = datetime.now().date()
-            db.execute(
-                """
-                INSERT INTO h_project (hk_project, project_name, t_from, rec_src)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (hk_project, project_name, now, 'API')
-            )
-            db.execute(
-                """
-                INSERT INTO s_project_details
-                (hk_project, t_from, b_from, rec_src, project_name)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (hk_project, now, today, 'API', project_name)
-            )
-            logger.info(f"Neues Projekt erstellt: {project_name}")
+        hk_project = project[0]
 
         # Erstelle eine eindeutige ID für den Zeiteintrag (kann auch ein Hash sein)
         # Verwenden wir die vom Frontend gesendete ID, falls vorhanden, sonst Timestamp
@@ -426,4 +406,23 @@ def delete_entry(entry_id):
         logger.error(f"Fehler beim Löschen des Zeiteintrags: {e}")
         return jsonify({'error': 'Fehler beim Löschen des Zeiteintrags'}), 500
     finally:
-        db.close() 
+        db.close()
+
+@time_matrix_bp.route("/api/projects", methods=["GET"])
+@jwt_required()
+def get_projects():
+    db = Database()
+    try:
+        projects = db.fetch_all("""
+            SELECT h_project.hk_project::text AS id, s_project_details.project_name AS name, h_customer.customer_name AS customer
+            FROM h_project
+            JOIN s_project_details ON h_project.hk_project = s_project_details.hk_project
+            LEFT JOIN h_customer ON s_project_details.customer_id = h_customer.hk_customer
+            WHERE s_project_details.t_to IS NULL
+        """)
+        return jsonify([
+            {"id": p[0], "name": p[1], "customer": p[2]}
+            for p in projects
+        ])
+    finally:
+        db.close()
