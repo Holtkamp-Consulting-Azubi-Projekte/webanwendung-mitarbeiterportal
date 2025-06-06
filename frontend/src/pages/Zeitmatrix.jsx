@@ -132,7 +132,14 @@ const Zeitmatrix = () => {
   }, [navigate]);
 
   // Liste der verfügbaren Projekte
-  const availableProjekte = TEMPORARY_TEST_PROJEKTE; // Oder später vom Backend laden
+  const availableProjekte = [
+    {
+      id: "4e7c8d33478994a51580d56cf1c10493c23f5667091241a369582fc50c42d136",
+      name: "Mitarbeiterportal",
+      customer: "Holtkamp Consulting"
+    },
+    // weitere Projekte...
+  ];
 
   // Filterlogik
   const filteredEntries = useMemo(() => {
@@ -228,73 +235,58 @@ const Zeitmatrix = () => {
   };
 
   const handleSaveEntry = (entryData) => {
-    // Stelle sicher, dass das Datum im korrekten Format ist
     const dataToSave = { ...entryData };
-    if (dataToSave.date instanceof Date) {
-       dataToSave.date = dataToSave.date.toISOString().split('T')[0]; // Datum als YYYY-MM-DD String formatieren
-    } else if (typeof dataToSave.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dataToSave.date)) {
-        console.error("Ungültiges Datumsformat vor dem Speichern:", dataToSave.date);
-        setError("Ungültiges Datumsformat. Eintrag kann nicht gespeichert werden.");
-        setModalOpen(false); // Modal schließen bei ungültigem Datum
-        setEditingEntry(null);
-        return; // Speichern abbrechen
+  
+    // Datum prüfen/formatieren
+    if (dataToSave.datum instanceof Date) {
+      dataToSave.datum = dataToSave.datum.toISOString().split('T')[0];
+    } else if (
+      typeof dataToSave.datum !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(dataToSave.datum)
+    ) {
+      console.error("Ungültiges Datumsformat vor dem Speichern:", dataToSave.datum);
+      setError("Ungültiges Datumsformat. Eintrag kann nicht gespeichert werden.");
+      setModalOpen(false);
+      setEditingEntry(null);
+      return;
     }
-
-    // Feldnamen von Frontend zu Backend anpassen
-    const backendData = {
-        datum: dataToSave.date, // date wird zu datum
-        beginn: dataToSave.startTime, // startTime wird zu beginn
-        ende: dataToSave.endTime, // endTime wird zu ende
-        pause: String(dataToSave.breakDuration || 0), // breakDuration wird zu pause (als String)
-        projekt: Array.isArray(dataToSave.project) ? dataToSave.project : [dataToSave.project].filter(p => p), // project wird zu projekt (als Array)
-        arbeitsort: dataToSave.workLocation || '', // workLocation wird zu arbeitsort
-        beschreibung: dataToSave.description || '', // description wird zu beschreibung
-        mitarbeiter: dataToSave.mitarbeiter, // mitarbeiter bleibt gleich
-        // id nur hinzufügen, wenn es ein bestehender Eintrag ist
-        ...(dataToSave.id && { id: dataToSave.id })
-    };
-
-    console.log("Daten, die an das Backend gesendet werden:", backendData); // Logge die zu sendenden Daten
-
+  
+    // Einfach dataToSave verwenden! (keine neue Variable backendData nötig)
+    console.log("Daten, die an das Backend gesendet werden:", dataToSave);
+  
     let method;
     let url;
-
+  
     if (editingEntry) {
-      // Wenn wir einen bestehenden Eintrag bearbeiten
       method = "PUT";
-      // Verwende die ID aus den übergebenen entryData
       url = `${API_URL}${dataToSave.id}`;
     } else {
-      // Wenn wir einen neuen Eintrag hinzufügen
       method = "POST";
-      url = API_URL; // Basis-URL für POST
+      url = API_URL;
     }
-
+  
     const token = localStorage.getItem('access_token');
-
+  
     fetch(url, {
       method: method,
       headers: {
         "Content-Type": "application/json",
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(backendData), // backendData verwenden
+      body: JSON.stringify(dataToSave),
     })
       .then(async (res) => {
         if (!res.ok) {
-          // Versuche, die Fehlerdaten aus der Response zu lesen
-          const errorData = await res.json().catch(() => null); // Versuche JSON zu parsen, fange Fehler wenn nicht JSON
+          const errorData = await res.json().catch(() => null);
           console.error("HTTP Error Response Status:", res.status);
           console.error("HTTP Error Response Data:", errorData);
-
-          // Logge Validierungsdetails, falls vorhanden im errorData
+  
           if (errorData?.details) {
-              console.error("Validierungsdetails vom Backend (aus Response Data):");
-              console.error(errorData.details);
+            console.error("Validierungsdetails vom Backend (aus Response Data):");
+            console.error(errorData.details);
           } else if (errorData) {
-              console.warn("'details' property not found in HTTP Error Response Data. Full data logged above.");
+            console.warn("'details' property not found in HTTP Error Response Data. Full data logged above.");
           }
-           // Wir werfen immer noch einen Fehler, damit der catch-Block ausgeführt wird
           throw new Error(errorData?.error || `HTTP error! status: ${res.status}`);
         }
         return res.json();
@@ -307,13 +299,9 @@ const Zeitmatrix = () => {
       })
       .catch((err) => {
         console.error("Fehler beim Speichern/Aktualisieren des Eintrags (im Catch-Block):");
-        // Hier loggen wir nur noch den Fehler selbst, da die Response-Details im then-Block geloggt werden sollten
         console.error(err);
-
         const errorMessage = err.message || "Ein unerwarteter Fehler ist beim Speichern aufgetreten.";
         setError(errorMessage);
-
-        // Schließe das Modal bei jedem Fehler im Catch-Block
         setModalOpen(false);
         setEditingEntry(null);
       });
@@ -343,6 +331,16 @@ const Zeitmatrix = () => {
     }
   };
 
+  const getProjectNameById = (projectId) => {
+    if (!projectId) return 'Kein Projekt';
+    const project = availableProjekte.find(p => String(p.id) === String(projectId));
+    console.log("projectId:", projectId, "availableProjekte:", availableProjekte.map(p => p.id));
+    if (!project) return projectId;
+    return project.customer
+      ? `${project.name} (Kunde: ${project.customer})`
+      : project.name;
+  };
+
   return (
     <div className="p-8 flex flex-col h-screen">
       {/* <h1 className="text-2xl font-bold text-primary mb-6">⌛️ Zeitmatrix</h1> */}
@@ -362,12 +360,32 @@ const Zeitmatrix = () => {
             onFilterChange={handleFilterChange}
             availableProjekte={availableProjekte}
           />
+          {/* Dropdown für Projekt-Filter */}
+          <select
+            value={filters.projekt || ''}
+            onChange={(e) => handleFilterChange('projekt', e.target.value)}
+            className="w-full px-1 py-0.5 text-sm border rounded"
+          >
+            <option value="">Alle</option>
+            {availableProjekte && availableProjekte.length > 0 ? (
+              availableProjekte.map((projekt) => (
+                <option
+                  key={projekt.id}
+                  value={projekt.id}
+                >
+                  {projekt.name} {projekt.customer ? `(Kunde: ${projekt.customer})` : ""}
+                </option>
+              ))
+            ) : (
+              <option value="">Lade Projekte...</option>
+            )}
+          </select>
         </div>
       )}
       <TimeEntryModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-        onSave={handleSaveEntry}
+        onSave={handleSaveEntry}   
         initialData={editingEntry || newEntryInitialData}
         availableProjekte={availableProjekte}
         coreHours={userProfile?.coreHours}
@@ -378,4 +396,3 @@ const Zeitmatrix = () => {
 }
 
 export default Zeitmatrix;
-  

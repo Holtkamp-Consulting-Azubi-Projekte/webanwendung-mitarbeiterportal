@@ -279,6 +279,16 @@ const TimeMatrixTable = React.memo(({ entries, onAddClick, onEditClick, onDelete
     }
   };
 
+  // Hilfsfunktion zum Finden des Projektnamens anhand der ID
+  const getProjectNameById = (projectId) => {
+    if (!projectId) return 'Kein Projekt';
+    const project = availableProjekte.find(p => String(p.id) === String(projectId));
+    if (!project) return projectId;
+    return project.customer
+      ? `${project.name} (Kunde: ${project.customer})`
+      : project.name;
+  };
+
   return (
     <div className="w-full flex flex-col h-full">
       <div className="mb-4 flex justify-between items-center">
@@ -339,7 +349,12 @@ const TimeMatrixTable = React.memo(({ entries, onAddClick, onEditClick, onDelete
                   <option value="">Alle</option>
                   {availableProjekte && availableProjekte.length > 0 ? (
                     availableProjekte.map((projekt) => (
-                      <option key={projekt} value={projekt}>{projekt}</option>
+                      <option
+                        key={projekt.id}
+                        value={projekt.id}
+                      >
+                        {projekt.name} {projekt.customer ? `(Kunde: ${projekt.customer})` : ""}
+                      </option>
                     ))
                   ) : (
                     <option value="">Lade Projekte...</option>
@@ -401,96 +416,87 @@ const TimeMatrixTable = React.memo(({ entries, onAddClick, onEditClick, onDelete
               return (
                 <React.Fragment key={dateStr}>
                   {dailyEntries.length > 0 ? (
-                    dailyEntries.map((entry, index) => (
-                      <tr key={`${dateStr}-${index}`} className={`${rowClasses} ${index === 0 ? 'border-t' : ''}`}>
-                        <td className="border px-2 py-1">
-                          {index === 0 && (
-                            <div className="flex flex-col">
-                              <div>{formatDateToDMY(entry.datum)}</div>
-                              {entry.datum && <div className="text-xs text-gray-600">{getWeekdayString(entry.datum)}</div>}
-                            </div>
-                          )}
-                        </td>
-                        <td className="border px-2 py-1">{entry.mitarbeiter}</td>
-                        <td className="border px-2 py-1">{entry.beginn}</td>
-                        <td className="border px-2 py-1">{entry.ende}</td>
-                        <td className="border px-2 py-1">{entry.pause}</td>
-                        <td className="border px-2 py-1">{formatWorkTime(calculateWorkTime(entry.beginn, entry.ende, entry.pause))}</td>
-                        <td className="border px-2 py-1">
-                          {Array.isArray(entry.projekt) ? (
-                            entry.projekt.map((proj, idx) => {
-                              const { projectName, customer } = splitProjectAndCustomer(proj);
-                              return (
-                                <div key={idx}>
-                                  <div>{projectName}</div>
-                                  {customer && <div className="text-xs text-gray-600">{customer}</div>}
-                                </div>
-                              );
-                            })
-                          ) : (
-                            (() => {
-                              const { projectName, customer } = splitProjectAndCustomer(entry.projekt);
-                              return (
-                                <div>
-                                  <div>{projectName}</div>
-                                  {customer && <div className="text-xs text-gray-600">{customer}</div>}
-                                </div>
-                              );
-                            })()
-                          )}
-                        </td>
-                        <td className="border px-2 py-1">{entry.arbeitsort}</td>
-                        <td className="border px-2 py-1 text-center relative">
-                          {/* Dropdown Button */}
-                          <button
-                            className="text-gray-600 hover:text-gray-900 focus:outline-none"
-                            onClick={() => toggleDropdown(entry.id)}
-                            aria-expanded={openDropdownId === entry.id}
-                            aria-haspopup="true"
-                          >
-                            Aktionen ▼
-                          </button>
-
-                          {/* Dropdown Menü */}
-                          {openDropdownId === entry.id && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
-                              <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                                <button
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  role="menuitem"
-                                  onClick={() => {
-                                    onEditClick(entry);
-                                    setOpenDropdownId(null); // Dropdown schließen
-                                  }}
-                                >
-                                  Bearbeiten
-                                </button>
-                                <button
-                                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                  role="menuitem"
-                                  onClick={() => {
-                                    onDeleteClick(entry.id);
-                                    setOpenDropdownId(null); // Dropdown schließen
-                                  }}
-                                >
-                                  Löschen
-                                </button>
-                                <button
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  role="menuitem"
-                                  onClick={() => {
-                                    onAddClick(formatLocalDateToYYYYMMDD(date)); // Datum des aktuellen Eintrags übergeben
-                                    setOpenDropdownId(null); // Dropdown schließen
-                                  }}
-                                >
-                                  + Weiterer Eintrag
-                                </button>
+                    dailyEntries.map((entry, index) => {
+                      console.log('availableProjekte:', availableProjekte);
+                      console.log('entry.projekt:', entry.projekt);
+                      return (
+                        <tr key={`${dateStr}-${index}`} className={`${rowClasses} ${index === 0 ? 'border-t' : ''}`}>
+                          <td className="border px-2 py-1">
+                            {index === 0 && (
+                              <div className="flex flex-col">
+                                <div>{formatDateToDMY(entry.datum)}</div>
+                                {entry.datum && <div className="text-xs text-gray-600">{getWeekdayString(entry.datum)}</div>}
                               </div>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                            )}
+                          </td>
+                          <td className="border px-2 py-1">{entry.mitarbeiter}</td>
+                          <td className="border px-2 py-1">{entry.beginn}</td>
+                          <td className="border px-2 py-1">{entry.ende}</td>
+                          <td className="border px-2 py-1">{entry.pause}</td>
+                          <td className="border px-2 py-1">{formatWorkTime(calculateWorkTime(entry.beginn, entry.ende, entry.pause))}</td>
+                          <td className="border px-2 py-1">
+                            {Array.isArray(entry.projekt)
+                              ? entry.projekt.map((projId, idx) => (
+                                  <div key={idx} className="py-0.5">
+                                    {getProjectNameById(projId)}
+                                  </div>
+                                ))
+                              : <div>{getProjectNameById(entry.projekt)}</div>
+                            }
+                          </td>
+                          <td className="border px-2 py-1">{entry.arbeitsort}</td>
+                          <td className="border px-2 py-1 text-center relative">
+                            {/* Dropdown Button */}
+                            <button
+                              className="text-gray-600 hover:text-gray-900 focus:outline-none"
+                              onClick={() => toggleDropdown(entry.id)}
+                              aria-expanded={openDropdownId === entry.id}
+                              aria-haspopup="true"
+                            >
+                              Aktionen ▼
+                            </button>
+
+                            {/* Dropdown Menü */}
+                            {openDropdownId === entry.id && (
+                              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                                  <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      onEditClick(entry);
+                                      setOpenDropdownId(null); // Dropdown schließen
+                                    }}
+                                  >
+                                    Bearbeiten
+                                  </button>
+                                  <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      onDeleteClick(entry.id);
+                                      setOpenDropdownId(null); // Dropdown schließen
+                                    }}
+                                  >
+                                    Löschen
+                                  </button>
+                                  <button
+                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    role="menuitem"
+                                    onClick={() => {
+                                      onAddClick(formatLocalDateToYYYYMMDD(date)); // Datum des aktuellen Eintrags übergeben
+                                      setOpenDropdownId(null); // Dropdown schließen
+                                    }}
+                                  >
+                                    + Weiterer Eintrag
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     // Zeile für Tage ohne Einträge
                     <tr key={dateStr} className={rowClasses}>
@@ -536,4 +542,4 @@ const TimeMatrixTable = React.memo(({ entries, onAddClick, onEditClick, onDelete
   );
 });
 
-export default TimeMatrixTable; 
+export default TimeMatrixTable;

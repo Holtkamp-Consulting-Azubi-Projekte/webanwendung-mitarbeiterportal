@@ -1,200 +1,185 @@
 import React, { useState, useEffect } from "react";
 
-const arbeitsorte = ["Büro", "Homeoffice", "Kunde"];
+// Hilfsfunktion: Kernarbeitszeit "08:30-17:00" → ["08:30", "17:00"]
+function parseCoreHours(coreHours) {
+  if (!coreHours) return ["", ""];
+  const [start, end] = coreHours.split("-");
+  return [start || "", end || ""];
+}
 
-/**
- * `TimeEntryModal` Komponente für die Erstellung und Bearbeitung von Zeiteinträgen.
- * Wird als Modal angezeigt und ermöglicht die Eingabe von Datum, Beginn, Ende, Projekt und Mitarbeiter.
- * Enthält Validierungslogik für Kernarbeitszeiten.
- */
-const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekte, coreHours, userProfile }) => {
-  const [formData, setFormData] = useState({
-    date: '',
-    startTime: '',
-    endTime: '',
-    breakDuration: 0,
-    project: '',
-    workLocation: '',
-    description: '',
-    id: '',
-    mitarbeiter: ''
-  });
-  const [timeWarning, setTimeWarning] = useState('');
+const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekte, userProfile }) => {
+  const [projekte, setProjekte] = useState([]);
+  const [profile, setProfile] = useState(null);
 
+  const [date, setDate] = useState("");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+
+  // Profil und Projekte beim Öffnen laden
   useEffect(() => {
     if (isOpen) {
-      if (initialData) {
-        setFormData({
-          date: initialData.datum || '',
-          startTime: initialData.beginn || '',
-          endTime: initialData.ende || '',
-          breakDuration: Number(initialData.pause) || 0,
-          project: Array.isArray(initialData.projekt) ? initialData.projekt[0] || '' : initialData.projekt || '',
-          workLocation: initialData.arbeitsort || '',
-          description: initialData.beschreibung || '',
-          id: initialData.id,
-          mitarbeiter: initialData.mitarbeiter || ''
-        });
-      } else {
-        setFormData({
-          date: '',
-          startTime: '',
-          endTime: '',
-          breakDuration: 0,
-          project: '',
-          workLocation: '',
-          description: '',
-          id: '',
-          mitarbeiter: ''
-        });
+      // Profil laden
+      fetch("http://localhost:5050/api/profile", {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("access_token"),
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => setProfile(data))
+        .catch(() => setError("Profil konnte nicht geladen werden"));
+
+      // Projekte laden
+      fetch("http://localhost:5050/api/projects", {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("access_token"),
+        },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then((data) => setProjekte(data))
+        .catch(() => setError("Konnte Projekte nicht laden"));
+    }
+  }, [isOpen]);
+
+  // Felder vorausfüllen, wenn Modal offen & Profil geladen
+  useEffect(() => {
+    if (isOpen && profile) {
+      // coreHours z.B. "08:30-17:00"
+      let coreStart = "";
+      let coreEnd = "";
+      if (profile.coreHours && profile.coreHours.includes("-")) {
+        [coreStart, coreEnd] = profile.coreHours.split("-");
       }
-      setTimeWarning('');
+      setDate(initialData?.date || new Date().toISOString().slice(0, 10));
+      setStart(initialData?.start || coreStart);
+      setEnd(initialData?.end || coreEnd);
+      setProjectId(initialData?.project_id || profile.currentProject || "");
+      setDescription(initialData?.description || "");
+      setError("");
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, profile, initialData]);
 
-  const checkCoreHours = () => {
-    if (!coreHours || !formData.startTime || !formData.endTime) return;
-    const [coreStart, coreEnd] = coreHours.split('-');
-    if (formData.startTime < coreStart || formData.endTime > coreEnd) {
-      setTimeWarning('Achtung: Der Eintrag liegt außerhalb der Kernarbeitszeit.');
-    } else {
-      setTimeWarning('');
+  // Wenn Modal geöffnet wird und noch kein Profil geladen ist
+  useEffect(() => {
+    if (isOpen && !profile) {
+      setDate(initialData?.date || new Date().toISOString().slice(0, 10));
+      setStart(initialData?.start || "");
+      setEnd(initialData?.end || "");
+      setProjectId(initialData?.project_id || "");
+      setDescription(initialData?.description || "");
+      setError("");
     }
-  };
+  }, [isOpen, initialData, profile]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    if (name === 'startTime' || name === 'endTime') {
-      checkCoreHours();
+  // Projekt-Default setzen:
+  useEffect(() => {
+    if (isOpen && userProfile) {
+      setProjectId(initialData?.project_id || userProfile.currentProject || "");
     }
-  };
+  }, [isOpen, userProfile, initialData]);
 
-  const handleSubmit = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    onSave(formData);
+    console.log("Speichern aufgerufen mit date:", date); // Debugging-Ausgabe
+    if (!date || !start || !end || !projectId) {
+      setError("Bitte alle Pflichtfelder ausfüllen");
+      return;
+    }
+    onSave({
+      datum: date,
+      beginn: start,
+      ende: end,
+      pause: "0",
+      projekt: projectId ? [projectId] : [],
+      beschreibung: description,
+    });
     onClose();
   };
 
   if (!isOpen) return null;
 
-  const modalTitle = initialData ? "Eintrag bearbeiten" : "Neuer Zeiteintrag";
-  const saveButtonText = initialData ? "Änderungen speichern" : "Speichern";
-
-  const cdSaveButtonClasses = "text-white bg-primary hover:bg-primary-dark focus:ring-4 focus:outline-none focus:ring-primary font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
-  const cdCancelButtonClasses = "text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition duration-200";
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold mb-4">{modalTitle}</h3>
-        {timeWarning && (
-          <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
-            {timeWarning}
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+        <h2 className="text-xl font-bold mb-4">Zeiteintrag erfassen</h2>
+        {error && <div className="text-red-600 mb-2">{error}</div>}
+        <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Mitarbeiter</label>
-            <input
-              type="text"
-              name="mitarbeiter"
-              value={formData.mitarbeiter}
-              disabled
-              className="w-full border px-2 py-1 rounded bg-gray-100"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Datum</label>
+            <label className="block font-medium mb-1">Datum*</label>
             <input
               type="date"
-              name="date"
-              value={formData.date}
-              onChange={handleInputChange}
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="w-full border rounded p-2"
               required
-              className="w-full border px-2 py-1 rounded"
             />
           </div>
           <div className="flex gap-2">
-            <input
-              type="time"
-              name="startTime"
-              value={formData.startTime}
-              onChange={handleInputChange}
-              required
-              className="w-full border px-2 py-1 rounded"
-            />
-            <input
-              type="time"
-              name="endTime"
-              value={formData.endTime}
-              onChange={handleInputChange}
-              className="w-full border px-2 py-1 rounded"
-            />
+            <div className="flex-1">
+              <label className="block font-medium mb-1">Start*</label>
+              <input
+                type="time"
+                value={start}
+                onChange={e => setStart(e.target.value)}
+                className="w-full border rounded p-2"
+                required
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block font-medium mb-1">Ende*</label>
+              <input
+                type="time"
+                value={end}
+                onChange={e => setEnd(e.target.value)}
+                className="w-full border rounded p-2"
+                required
+              />
+            </div>
           </div>
-          <input
-            type="number"
-            name="breakDuration"
-            placeholder="Pause (min)"
-            value={formData.breakDuration}
-            onChange={handleInputChange}
-            min="0"
-            className="w-full border px-2 py-1 rounded"
-          />
-          <select
-            name="project"
-            value={formData.project}
-            onChange={handleInputChange}
-            required
-            className="w-full border px-2 py-1 rounded"
-          >
-            <option value="">Bitte Projekt wählen</option>
-            {availableProjekte && availableProjekte.length > 0 ? (
-              availableProjekte.map((projekt) => (
-                <option key={projekt} value={projekt}>
-                  {projekt}
-                </option>
-              ))
-            ) : (
-              <option value="">Lade Projekte...</option>
-            )}
-          </select>
-          <select
-            name="workLocation"
-            value={formData.workLocation}
-            onChange={handleInputChange}
-            className="w-full border px-2 py-1 rounded"
-          >
-            {arbeitsorte.map((ort) => (
-              <option key={ort} value={ort}>{ort}</option>
-            ))}
-          </select>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Beschreibung</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows="3"
-              className="w-full border px-2 py-1 rounded"
-            ></textarea>
+            <label className="block font-medium mb-1">Projekt*</label>
+            <select
+              value={projectId}
+              onChange={e => setProjectId(e.target.value)}
+              className="w-full border rounded p-2"
+              required
+            >
+              <option value="">Projekt wählen</option>
+              {availableProjekte.map(projekt => (
+                <option key={projekt.id} value={projekt.id}>
+                  {projekt.name} {projekt.customer ? `(Kunde: ${projekt.customer})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block font-medium mb-1">Beschreibung</label>
+            <input
+              type="text"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full border rounded p-2"
+              placeholder="Optional"
+            />
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button
               type="button"
+              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
               onClick={onClose}
-              className={cdCancelButtonClasses}
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className={cdSaveButtonClasses}
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
             >
-              {saveButtonText}
+              Speichern
             </button>
           </div>
         </form>
@@ -203,4 +188,4 @@ const TimeEntryModal = ({ isOpen, onClose, onSave, initialData, availableProjekt
   );
 };
 
-export default TimeEntryModal; 
+export default TimeEntryModal;
