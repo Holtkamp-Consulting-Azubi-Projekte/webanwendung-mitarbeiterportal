@@ -201,6 +201,22 @@ class Database:
             self.rollback()
             raise
 
+    def update_user_password(self, user_id, password_hash):
+        """Aktualisiert das Passwort eines Benutzers."""
+        try:
+            query = """
+            UPDATE users 
+            SET password_hash = %s 
+            WHERE id = %s
+            """
+            self.cursor.execute(query, (password_hash, user_id))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Fehler beim Aktualisieren des Passworts: {e}")
+            self.conn.rollback()
+            raise
+
     def get_projects(self):
         """Holt alle verfügbaren Projekte."""
         return self.fetch_all(
@@ -210,4 +226,4 @@ class Database:
             LEFT JOIN s_project_details d ON d.hk_project = p.hk_project AND d.t_to IS NULL
             ORDER BY p.project_name
             """
-        ) 
+        )
