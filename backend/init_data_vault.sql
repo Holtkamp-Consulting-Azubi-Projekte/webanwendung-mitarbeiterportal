@@ -45,6 +45,7 @@ CREATE TABLE H_CUSTOMER (
     HK_CUSTOMER BYTEA PRIMARY KEY,              -- Hash Key, z. B. SHA-256 Hash vom Kundennamen
     CUSTOMER_NAME VARCHAR(255) UNIQUE NOT NULL, -- Name des Kunden
     T_FROM TIMESTAMP NOT NULL,                  -- Technischer Gültigkeitsbeginn
+    T_TO TIMESTAMP NULL,                        -- Technisches Gültigkeitsende (NULL für aktive Einträge)
     REC_SRC VARCHAR(255) NOT NULL               -- Quelle des Datensatzes
 );
 

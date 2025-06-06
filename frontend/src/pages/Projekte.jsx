@@ -110,11 +110,13 @@ export default function Projekte() {
       />
 
       {/* Modal: Kunden verwalten */}
-      <KundenVerwaltungModal
-        open={showKundenVerwaltung}
-        onClose={() => setShowKundenVerwaltung(false)}
-        onUpdate={handleKundenUpdate}
-      />
+      {showKundenVerwaltung && (
+        <KundenVerwaltungModal
+          open={showKundenVerwaltung}
+          onClose={() => setShowKundenVerwaltung(false)}
+          onUpdate={handleKundenUpdate} // Neue Prop für Updates
+        />
+      )}
     </div>
   );
 }

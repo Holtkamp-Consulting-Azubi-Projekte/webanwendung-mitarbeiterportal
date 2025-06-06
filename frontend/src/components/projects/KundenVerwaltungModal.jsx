@@ -19,40 +19,78 @@ function SimpleModal({ open, onClose, children }) {
   );
 }
 
-export default function KundenVerwaltungModal({ open, onClose }) {
+export default function KundenVerwaltungModal({ open, onClose, onUpdate }) {
   const [kunden, setKunden] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   function ladeKunden() {
+    setLoading(true);
+    setError(null);
+    
     fetch("/api/customers")
-      .then(res => res.json())
-      .then(setKunden);
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP Fehler: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setKunden(data || []);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError("Kunden konnten nicht geladen werden: " + err.message);
+        setLoading(false);
+      });
   }
 
   useEffect(() => {
     if (open) ladeKunden();
   }, [open]);
 
-  function handleDeleteCustomer(hk_customer) {
-    if (!window.confirm("Diesen Kunden wirklich löschen?")) return;
+  function handleDeleteCustomer(hk_customer, customerName) {
+    if (!window.confirm(`Kunden "${customerName}" wirklich löschen?`)) return;
+    
     fetch(`/api/customers/${hk_customer}`, { method: "DELETE" })
-      .then(res => res.json())
-      .then(() => ladeKunden());
+      .then(async res => {
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.error || "Kunde konnte nicht gelöscht werden");
+        }
+        
+        // Kundenliste neu laden
+        ladeKunden();
+        
+        // Elternkomponente (Projekte) über Änderung informieren
+        onUpdate && onUpdate();
+        
+        return data;
+      })
+      .catch(err => {
+        alert(err.message);
+      });
   }
 
   return (
     <SimpleModal open={open} onClose={onClose}>
       <h2 className="text-xl font-bold mb-4 text-primary">Kundenverwaltung</h2>
-      {kunden.length === 0 ? (
+      {loading ? (
+        <div>Laden...</div>
+      ) : error ? (
+        <div className="text-red-500">{error}</div>
+      ) : kunden.length === 0 ? (
         <div className="text-gray-500">Keine Kunden vorhanden.</div>
       ) : (
-        <ul>
+        <ul className="space-y-2">
           {kunden.map(kunde => (
             <li key={kunde.hk_customer} className="flex justify-between items-center border-b py-2">
               <span>{kunde.customer_name}</span>
               <Button
                 type="button"
-                onClick={() => handleDeleteCustomer(kunde.hk_customer)}
-                className="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded ml-2"
+                onClick={() => handleDeleteCustomer(kunde.hk_customer, kunde.customer_name)}
+                className="!bg-red-500 !text-white !border-red-500 hover:!bg-red-600 hover:!border-red-600 !min-w-[80px]"
               >
                 Löschen
               </Button>

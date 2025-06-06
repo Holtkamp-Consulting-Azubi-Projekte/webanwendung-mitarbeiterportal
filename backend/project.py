@@ -4,6 +4,7 @@ import hashlib
 from datetime import datetime
 
 project_bp = Blueprint("project", __name__)
+customer_bp = Blueprint("customer", __name__)
 
 def parse_date(date_str):
     if not date_str or date_str.strip() == "":
@@ -118,7 +119,7 @@ def edit_project(hk_project):
         SET t_to = NOW()
         WHERE encode(hk_project, 'hex') = %s AND t_to IS NULL
     """, (hk_project,))
-    # Neues Satellite
+    # Neues Satellite mit sicheren Werten
     cur.execute("""
         INSERT INTO s_project_details (
             hk_project, t_from, b_from, rec_src, project_name, description,
@@ -130,7 +131,7 @@ def edit_project(hk_project):
     """, (
         hk_project,
         data["project_name"],
-        data.get("description"),
+        data.get("description") or "",  # NULL-Werte vermeiden
         data["customer_id"],
         none_if_empty(data.get("start_date")),
         none_if_empty(data.get("end_date")),
@@ -155,3 +156,68 @@ def delete_project(hk_project):
     cur.close()
     conn.close()
     return jsonify({"status": "deleted"})
+
+@project_bp.route("/api/projects/<hk_project>", methods=["GET"])
+def get_project(hk_project):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT 
+            encode(hk_project, 'hex') as hk_project,
+            project_name,
+            description,
+            encode(customer_id, 'hex') as customer_id,
+            start_date,
+            end_date,
+            budget_days
+        FROM s_project_details
+        WHERE encode(hk_project, 'hex') = %s AND t_to IS NULL
+    """, (hk_project,))
+    
+    project = cur.fetchone()
+    if not project:
+        return jsonify({"error": "Projekt nicht gefunden"}), 404
+    
+    result = {
+        "hk_project": project[0],
+        "project_name": project[1],
+        "description": project[2] or "",
+        "customer_id": project[3],
+        "start_date": project[4].isoformat() if project[4] else "",
+        "end_date": project[5].isoformat() if project[5] else "",
+        "budget_days": project[6] if project[6] is not None else ""
+    }
+    
+    cur.close()
+    conn.close()
+    return jsonify(result)
+
+@customer_bp.route("/api/customers/<hk_customer>", methods=["DELETE"])
+def delete_customer(hk_customer):
+    conn = get_db_conn()
+    cur = conn.cursor()
+    try:
+        # Prüfen, ob noch Projekte mit diesem Kunden verknüpft sind
+        cur.execute("""
+            SELECT COUNT(*) FROM s_project_details 
+            WHERE customer_id = decode(%s, 'hex') AND t_to IS NULL
+        """, (hk_customer,))
+        count = cur.fetchone()[0]
+        
+        if count > 0:
+            return jsonify({
+                "error": "Kunde kann nicht gelöscht werden, da noch Projekte damit verknüpft sind.",
+                "projectCount": count
+            }), 400
+            
+        # Wenn keine Projekte verknüpft sind, kann gelöscht werden
+        cur.execute("DELETE FROM h_customer WHERE encode(hk_customer, 'hex') = %s", (hk_customer,))
+        conn.commit()
+        return jsonify({"message": "Kunde erfolgreich gelöscht"}), 200
+    except Exception as e:
+        conn.rollback()
+        print(f"Fehler beim Löschen des Kunden: {e}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()

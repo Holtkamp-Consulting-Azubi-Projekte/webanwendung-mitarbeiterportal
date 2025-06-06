@@ -11,34 +11,63 @@ const LEERES_PROJEKT = {
   budget_days: ""
 };
 
+// Hilfsfunktion zum Formatieren des Datums für input[type="date"]
+function formatDateForInput(dateString) {
+  if (!dateString) return "";
+  
+  // Wenn es bereits im richtigen Format ist (yyyy-MM-dd)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return ""; // Ungültiges Datum
+    
+    // Format: yyyy-MM-dd
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    console.error("Fehler beim Formatieren des Datums:", e);
+    return "";
+  }
+}
+
 // ProjectForm für Anlegen & Editieren (über initialValues)
 export default function ProjectForm({
   initialValues = {},
   kunden = [],
   onSubmit,
-  submitText = "Projekt anlegen",
+  submitText = "Speichern",
   disabled = false
 }) {
-  const [form, setForm] = useState({
-    ...LEERES_PROJEKT,
-    ...initialValues // Überschreibt Defaults beim Bearbeiten
+  const [formData, setFormData] = useState({
+    project_name: initialValues?.project_name || "",
+    customer_id: initialValues?.customer_id || "",
+    description: initialValues?.description || "",
+    start_date: initialValues?.start_date || "",
+    end_date: initialValues?.end_date || "",
+    budget_days: initialValues?.budget_days !== null ? initialValues.budget_days : ""
   });
 
   // Wenn initialValues sich ändern (Edit-Dialog öffnet sich neu)
   useEffect(() => {
-    setForm({
-      ...LEERES_PROJEKT,
-      ...initialValues
+    setFormData({
+      project_name: initialValues?.project_name || "",
+      customer_id: initialValues?.customer_id || "",
+      description: initialValues?.description || "",
+      start_date: initialValues?.start_date || "",
+      end_date: initialValues?.end_date || "",
+      budget_days: initialValues?.budget_days !== null ? initialValues.budget_days : ""
     });
   }, [initialValues]);
 
   function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (onSubmit) onSubmit(form);
+    if (onSubmit) onSubmit(formData);
   }
 
   return (
@@ -48,7 +77,7 @@ export default function ProjectForm({
       </h2>
       <input
         name="project_name"
-        value={form.project_name}
+        value={formData.project_name || ""}
         onChange={handleChange}
         placeholder="Projektname"
         required
@@ -58,7 +87,7 @@ export default function ProjectForm({
       <div className="flex gap-2 mb-2">
         <select
           name="customer_id"
-          value={form.customer_id}
+          value={formData.customer_id || ""}
           onChange={handleChange}
           required
           className="p-2 border rounded w-full"
@@ -75,7 +104,7 @@ export default function ProjectForm({
       </div>
       <textarea
         name="description"
-        value={form.description}
+        value={formData.description || ""}
         onChange={handleChange}
         placeholder="Beschreibung"
         className="mb-2 p-2 border rounded w-full"
@@ -85,7 +114,7 @@ export default function ProjectForm({
         <input
           type="date"
           name="start_date"
-          value={form.start_date}
+          value={formatDateForInput(formData.start_date)}
           onChange={handleChange}
           className="p-2 border rounded w-full"
           disabled={disabled}
@@ -93,7 +122,7 @@ export default function ProjectForm({
         <input
           type="date"
           name="end_date"
-          value={form.end_date}
+          value={formatDateForInput(formData.end_date)}
           onChange={handleChange}
           className="p-2 border rounded w-full"
           disabled={disabled}
@@ -102,7 +131,7 @@ export default function ProjectForm({
       <input
         type="number"
         name="budget_days"
-        value={form.budget_days}
+        value={formData.budget_days !== null ? formData.budget_days : ""}
         onChange={handleChange}
         placeholder="Budget (Tage)"
         className="mb-4 p-2 border rounded w-full"
