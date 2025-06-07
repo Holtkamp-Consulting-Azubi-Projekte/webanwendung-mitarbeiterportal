@@ -13,6 +13,7 @@ class Database:
         self.conn = None
         self.cur = None
         self.connect()
+        self._ensure_tables_exist()
 
     def connect(self):
         """Stellt die Verbindung zur Datenbank her."""
@@ -29,6 +30,80 @@ class Database:
         except Exception as e:
             print(f"Fehler beim Verbinden zur Datenbank: {e}")
             raise
+
+    def _ensure_tables_exist(self):
+        """Stellt sicher, dass alle benötigten Tabellen existieren."""
+        try:
+            # Stelle sicher, dass die h_project Tabelle existiert
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS h_project (
+                    hk_project BYTEA PRIMARY KEY,
+                    t_from TIMESTAMPTZ NOT NULL,
+                    rec_src VARCHAR(50) NOT NULL
+                )
+            """)
+            
+            # Stelle sicher, dass die s_project_details Tabelle existiert
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS s_project_details (
+                    hk_project BYTEA NOT NULL,
+                    t_from TIMESTAMPTZ NOT NULL,
+                    t_to TIMESTAMPTZ NULL,
+                    b_from DATE NOT NULL,
+                    b_to DATE NULL,
+                    rec_src VARCHAR(50) NOT NULL,
+                    project_name VARCHAR(255) NOT NULL,
+                    project_description TEXT,
+                    PRIMARY KEY (hk_project, t_from)
+                )
+            """)
+            
+            # Stelle sicher, dass die s_user_current_project Tabelle existiert
+            self.execute("""
+                CREATE TABLE IF NOT EXISTS s_user_current_project (
+                    hk_user BYTEA NOT NULL,
+                    hk_project BYTEA NOT NULL,
+                    t_from TIMESTAMPTZ NOT NULL,
+                    t_to TIMESTAMPTZ NULL,
+                    b_from DATE NOT NULL,
+                    b_to DATE NULL,
+                    rec_src VARCHAR(50) NOT NULL,
+                    PRIMARY KEY (hk_user, hk_project, t_from)
+                )
+            """)
+            
+            # Stellen wir sicher, dass wir mindestens ein Projekt in der Datenbank haben
+            demo_project_exists = self.fetch_one("""
+                SELECT COUNT(*) FROM h_project WHERE hk_project = decode('4e7c8d33478994a51580d56cf1c10493c23f5667091241a369582fc50c42d136', 'hex')
+            """)
+            
+            if not demo_project_exists or demo_project_exists[0] == 0:
+                now = datetime.utcnow()
+                today = datetime.now().date()
+                
+                # Füge ein Demo-Projekt hinzu
+                hk_project = bytes.fromhex('4e7c8d33478994a51580d56cf1c10493c23f5667091241a369582fc50c42d136')
+                
+                self.execute("""
+                    INSERT INTO h_project (hk_project, t_from, rec_src)
+                    VALUES (%s, %s, %s)
+                """, (hk_project, now, 'SYSTEM'))
+                
+                self.execute("""
+                    INSERT INTO s_project_details 
+                    (hk_project, t_from, b_from, rec_src, project_name, project_description)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (hk_project, now, today, 'SYSTEM', 'Demo-Projekt', 'Ein Demo-Projekt für Tests'))
+                
+                self.commit()
+                print("Demo-Projekt erstellt")
+            
+            self.commit()
+            print("Tabellen-Check abgeschlossen")
+        except Exception as e:
+            print(f"Fehler bei Tabellen-Check: {e}")
+            import traceback
+            traceback.print_exc()
 
     def close(self):
         """Schließt die Datenbankverbindung."""
@@ -112,27 +187,65 @@ class Database:
             raise
 
     def get_user_by_email(self, email):
-        sql = """
-            SELECT
-                u.hk_user,
-                u.user_id,
-                d.first_name,
-                d.last_name,
-                d.position,
-                d.core_hours,
-                d.telefon,
-                l.password_hash,     
-                encode(cp.hk_project, 'hex') AS current_project
-            FROM h_user u
-            JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
-            JOIN s_user_login l ON u.hk_user = l.hk_user  -- NEU: join auf Login-Tabelle
-            LEFT JOIN s_user_current_project cp ON cp.hk_user = u.hk_user AND cp.t_to IS NULL
-            WHERE u.user_id = %s
         """
-        with self.conn.cursor() as cur:
-            cur.execute(sql, (email,))
-            return cur.fetchone()
-
+        Holt einen Benutzer anhand seiner E-Mail-Adresse.
+        Stellt sicher, dass das neueste Passwort und aktuelle Projekt verwendet wird.
+        """
+        try:
+            print(f"🔍 Suche Benutzer mit E-Mail: {email}")
+            
+            sql = """
+                SELECT
+                    u.hk_user,
+                    u.user_id,
+                    d.first_name,
+                    d.last_name,
+                    d.position,
+                    d.core_hours,
+                    d.telefon,
+                    (SELECT password_hash FROM s_user_login 
+                     WHERE hk_user = u.hk_user AND t_to IS NULL 
+                     ORDER BY t_from DESC LIMIT 1) AS password_hash,
+                    (SELECT encode(hk_project, 'hex') FROM s_user_current_project 
+                     WHERE hk_user = u.hk_user AND t_to IS NULL 
+                     ORDER BY t_from DESC LIMIT 1) AS current_project
+                FROM h_user u
+                JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
+                WHERE u.user_id = %s
+            """
+            
+            result = self.fetch_one(sql, (email,))
+            
+            if result:
+                print(f"✅ Benutzer gefunden: {result[1]}")
+                print(f"✅ Aktuelles Projekt aus DB: {result[8]}")
+                
+                # Extra Debug: Prüfe direkt die Projekttabelle
+                current_projects = self.fetch_all("""
+                    SELECT encode(hk_project, 'hex'), t_from, t_to
+                    FROM s_user_current_project
+                    WHERE hk_user = %s
+                    ORDER BY t_from DESC
+                """, (result[0],))
+                
+                if current_projects:
+                    print(f"🔍 Gefundene Projekte für {email}:")
+                    for p in current_projects:
+                        status = "AKTIV" if p[2] is None else f"INAKTIV (bis {p[2]})"
+                        print(f"  - {p[0]} (seit {p[1]}) - {status}")
+                else:
+                    print(f"⚠️ Keine Projekte in s_user_current_project für {email} gefunden")
+                
+                return result
+            else:
+                print(f"⚠️ Kein Benutzer mit E-Mail {email} gefunden")
+                return None
+            
+        except Exception as e:
+            print(f"❌ Fehler in get_user_by_email: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
     def update_user_details(self, hk_user, update_data):
         """Aktualisiert die Benutzerdetails."""
@@ -171,10 +284,19 @@ class Database:
             raise
 
     def update_password(self, hk_user, new_password_hash):
-        """Aktualisiert das Benutzerpasswort."""
+        """
+        Aktualisiert das Passwort eines Benutzers.
+        
+        Args:
+            hk_user (bytes/str): Die HK_USER ID des Benutzers
+            new_password_hash (str): Der Hash des neuen Passworts
+        """
         try:
             now = datetime.utcnow()
             today = datetime.now().date()
+
+            # Debug-Ausgabe
+            print(f"Aktualisiere Passwort für hk_user {hk_user}")
 
             # Aktuelle Login-Daten als historisch markieren
             self.execute(
@@ -197,24 +319,10 @@ class Database:
             )
 
             self.commit()
+            print(f"Passwort erfolgreich aktualisiert für hk_user {hk_user}")
         except Exception as e:
             self.rollback()
-            raise
-
-    def update_user_password(self, user_id, password_hash):
-        """Aktualisiert das Passwort eines Benutzers."""
-        try:
-            query = """
-            UPDATE users 
-            SET password_hash = %s 
-            WHERE id = %s
-            """
-            self.cursor.execute(query, (password_hash, user_id))
-            self.conn.commit()
-            return True
-        except Exception as e:
-            print(f"Fehler beim Aktualisieren des Passworts: {e}")
-            self.conn.rollback()
+            print(f"Fehler bei Passwortaktualisierung: {str(e)}")
             raise
 
     def get_projects(self):
@@ -235,24 +343,110 @@ class Database:
         Returns:
             list: Eine Liste von Projekt-Dictionaries mit hk_project und project_name
         """
-        try:
-            # Stelle sicher, dass eine Verbindung und ein Cursor existieren
-            self.connect()
-            query = """
-            SELECT h.hk_project, s.project_name 
+        result = self.fetch_all("""
+            SELECT encode(h.hk_project, 'hex') as hk_project_hex, s.project_name 
             FROM h_project h
             JOIN s_project_details s ON h.hk_project = s.hk_project
-            WHERE h.t_to IS NULL OR h.t_to >= CURRENT_TIMESTAMP
+            WHERE s.t_to IS NULL
             ORDER BY s.project_name
-            """
-            self.cursor.execute(query)
-            projects = []
-            for row in self.cursor.fetchall():
-                projects.append({
-                    "hk_project": row[0],
-                    "project_name": row[1]
-                })
-            return projects
+        """)
+        
+        # Konvertiere das Ergebnis in eine Liste von Dictionaries
+        projects = []
+        for row in result:
+            projects.append({
+                "hk_project": row[0],
+                "project_name": row[1]
+            })
+        return projects
+
+    def update_user_project(self, hk_user, hk_project):
+        """
+        Aktualisiert das aktuelle Projekt eines Benutzers.
+        
+        Args:
+            hk_user (bytes): Die ID des Benutzers
+            hk_project (bytes oder None): Die ID des Projekts oder None, wenn kein Projekt ausgewählt ist
+        """
+        try:
+            now = datetime.utcnow()
+            today = datetime.now().date()
+            
+            # Debug-Ausgabe
+            print(f"UPDATE_USER_PROJECT:")
+            print(f"- hk_user: {hk_user.hex() if isinstance(hk_user, bytes) else hk_user}")
+            if hk_project:
+                print(f"- hk_project: {hk_project.hex() if isinstance(hk_project, bytes) else hk_project}")
+            else:
+                print("- hk_project: None (kein Projekt)")
+            
+            # Aktuelle Projektverknüpfungen als historisch markieren
+            rows_updated = self.execute(
+                """
+                UPDATE s_user_current_project
+                SET t_to = %s, b_to = %s
+                WHERE hk_user = %s AND t_to IS NULL
+                """,
+                (now, today, hk_user)
+            ).rowcount
+            print(f"- Historisierte Einträge: {rows_updated}")
+            
+            # Wenn ein Projekt gesetzt wird, fügen wir es ein
+            if hk_project:
+                # Prüfen, ob das Projekt existiert
+                project_exists = self.fetch_one("""
+                    SELECT COUNT(*) FROM h_project 
+                    WHERE hk_project = %s
+                """, (hk_project,))
+                
+                if not project_exists or project_exists[0] == 0:
+                    print(f"- Projekt existiert nicht in h_project. Erstelle es zuerst")
+                    # Projekt erstellen
+                    self.execute("""
+                        INSERT INTO h_project (hk_project, t_from, rec_src)
+                        VALUES (%s, %s, %s)
+                    """, (hk_project, now, 'API'))
+                    
+                    # Projektdetails erstellen
+                    self.execute("""
+                        INSERT INTO s_project_details 
+                        (hk_project, t_from, b_from, rec_src, project_name, project_description)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (hk_project, now, today, 'API', f'Projekt {hk_project.hex()[:8]}', 'Automatisch erstellt'))
+                    
+                    print(f"- Projekt wurde erstellt: {hk_project.hex()}")
+                
+                # Projekt-Benutzer-Verknüpfung erstellen
+                self.execute(
+                    """
+                    INSERT INTO s_user_current_project 
+                    (hk_user, hk_project, t_from, b_from, rec_src)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (hk_user, hk_project, now, today, 'API')
+                )
+                print(f"- Neue Projekt-Benutzer-Verknüpfung erstellt")
+                
+                # Nach dem Einfügen überprüfen, ob die Verknüpfung erstellt wurde
+                check = self.fetch_one("""
+                    SELECT encode(hk_project, 'hex')
+                    FROM s_user_current_project
+                    WHERE hk_user = %s AND hk_project = %s AND t_to IS NULL
+                """, (hk_user, hk_project))
+                
+                if check:
+                    print(f"- ERFOLG: Verknüpfung wurde erstellt und ist aktiv: {check[0]}")
+                else:
+                    print("- FEHLER: Verknüpfung konnte nicht erstellt werden!")
+            
+            # WICHTIG: Commit der Transaktion!
+            self.commit()
+            print("- Transaktion erfolgreich abgeschlossen")
+            
         except Exception as e:
-            print(f"Error getting projects: {e}")
-            raise e
+            # Bei einem Fehler Rollback durchführen
+            self.rollback()
+            print(f"- FEHLER: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise

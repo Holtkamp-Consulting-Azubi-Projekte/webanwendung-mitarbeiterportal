@@ -1,25 +1,40 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
-from log import log_event
 from database import Database
 import traceback
+import binascii
 
 profile_bp = Blueprint("profile", __name__)
 
 @profile_bp.route("/api/profile", methods=["GET", "PUT", "OPTIONS"])
 @jwt_required()
 def profile():
-    """Endpunkt zum Abrufen und Aktualisieren des Benutzerprofils."""
+    print("⭐️ PROFIL-ROUTE AUFGERUFEN")
     if request.method == "OPTIONS":
         return jsonify({}), 200
-    
+        
     current_user_email = get_jwt_identity()
+    print(f"⭐️ Benutzer-Email: {current_user_email}")
     db = Database()
+    
     try:
         if request.method == "GET":
+            print("⭐️ GET-Methode aufgerufen")
             user = db.get_user_by_email(current_user_email)
+            
             if user:
+                # Direkte Datenbankabfrage zum aktuellen Projekt des Benutzers
+                current_project = db.fetch_one("""
+                    SELECT encode(hk_project, 'hex')
+                    FROM s_user_current_project 
+                    WHERE hk_user = %s AND t_to IS NULL 
+                    ORDER BY t_from DESC LIMIT 1
+                """, (user[0],))
+                
+                current_project_hex = current_project[0] if current_project else None
+                print(f"⭐️ Aktuelles Projekt direkt aus DB: {current_project_hex}")
+                
                 user_data = {
                     'firstName': user[2],
                     'lastName': user[3],
@@ -27,36 +42,78 @@ def profile():
                     'position': user[4],
                     'coreHours': user[5],
                     'telefon': user[6],
-                    'currentProject': user[8]
+                    'currentProject': current_project_hex  # Verwende das direkt abgefragte Projekt
                 }
-                log_event('profile_accessed', user_id=current_user_email)
+                print(f"⭐️ Zurückgegebene Profildaten: {user_data}")
                 return jsonify(user_data), 200
-            
-            log_event('profile_access_failed', user_id=current_user_email, 
-                     details={'reason': 'user_not_found'})
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
-        
+            
         elif request.method == "PUT":
+            print("⭐️ PUT-Methode aufgerufen")
             user = db.get_user_by_email(current_user_email)
             if not user:
-                log_event('profile_update_failed', user_id=current_user_email, 
-                         details={'reason': 'user_not_found'})
                 return jsonify({"error": "Benutzer nicht gefunden"}), 404
+                
+            update_data = request.get_json()
+            print(f"⭐️ Erhaltene Daten: {update_data}")
             
-            update_data = request.json
-            if "currentProject" in update_data:
-                update_data["current_project"] = update_data.pop("currentProject")
+            # WICHTIG: Das currentProject-Attribut extrahieren
+            current_project = update_data.get('currentProject')
+            print(f"⭐️ Aktuelles Projekt aus Request: {current_project}")
             
+            # Aktualisieren der Benutzerdetails (ohne Projekt)
             db.update_user_details(user[0], update_data)
-            log_event('profile_updated', user_id=current_user_email)
+            print("⭐️ Benutzerdetails aktualisiert")
+            
+            # Aktualisiere das Projekt, wenn es im Request enthalten ist
+            if 'currentProject' in update_data:
+                try:
+                    if current_project:  # Wenn ein Projekt angegeben wurde
+                        print(f"⭐️ Konvertiere Projekt-ID {current_project} zu bytes")
+                        project_id_bytes = bytes.fromhex(current_project)
+                    else:  # Wenn kein Projekt angegeben wurde (leerer String oder null)
+                        project_id_bytes = None
+                        print("⭐️ Setze Projekt auf None (kein Projekt)")
+                    
+                    # Rufe die update_user_project Methode auf
+                    print(f"⭐️ Rufe update_user_project auf mit hk_user={user[0].hex() if isinstance(user[0], bytes) else user[0]} und project={current_project}")
+                    db.update_user_project(user[0], project_id_bytes)
+                    print("⭐️ Projektaktualisierung abgeschlossen")
+                    
+                    # Direkte Prüfung nach dem Update
+                    print("⭐️ Überprüfe aktualisiertes Projekt direkt aus der Datenbank:")
+                    check = db.fetch_one("""
+                        SELECT encode(hk_project, 'hex')
+                        FROM s_user_current_project
+                        WHERE hk_user = %s AND t_to IS NULL
+                        ORDER BY t_from DESC LIMIT 1
+                    """, (user[0],))
+                    
+                    if check:
+                        print(f"⭐️ Projekt nach Update: {check[0]}")
+                    else:
+                        print("⭐️ WARNUNG: Kein aktives Projekt nach dem Update gefunden!")
+                        
+                except ValueError as e:
+                    print(f"⚠️ Fehler bei Konvertierung der Projekt-ID: {e}")
+                    return jsonify({"error": f"Ungültige Projekt-ID: {current_project}"}), 400
+                except Exception as e:
+                    print(f"⚠️ Fehler beim Update des Projekts: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    return jsonify({"error": f"Fehler beim Aktualisieren des Projekts: {e}"}), 500
+            
+            # Überprüfe das aktualisierte Profil
+            updated_user = db.get_user_by_email(current_user_email)
+            print(f"⭐️ Aktualisiertes Profil aus DB: {updated_user}")
+            
             return jsonify({"message": "Profil erfolgreich aktualisiert"}), 200
-    
+            
     except Exception as e:
-        print(f"Fehler beim Zugriff auf das Profil: {e}")
+        print(f"⚠️ Fehler bei Profil-Route: {e}")
+        import traceback
         traceback.print_exc()
-        log_event('profile_error', user_id=current_user_email, details={'error': str(e)})
         return jsonify({"error": str(e)}), 500
-    
     finally:
         db.close()
 
@@ -69,8 +126,6 @@ def change_password():
     
     # Überprüfe erforderliche Felder
     if not all(field in data for field in ['currentPassword', 'newPassword', 'confirmPassword']):
-        log_event('password_change_failed', user_id=current_user_email, 
-                 details={'reason': 'missing_fields'})
         return jsonify({
             'success': False,
             'message': 'Alle Passwortfelder sind erforderlich'
@@ -78,8 +133,6 @@ def change_password():
     
     # Überprüfe, ob das neue Passwort mit der Bestätigung übereinstimmt
     if data['newPassword'] != data['confirmPassword']:
-        log_event('password_change_failed', user_id=current_user_email, 
-                 details={'reason': 'passwords_dont_match'})
         return jsonify({
             'success': False,
             'message': 'Das neue Passwort und die Bestätigung stimmen nicht überein'
@@ -87,8 +140,6 @@ def change_password():
     
     # Überprüfe Passwort-Komplexität
     if len(data['newPassword']) < 8:
-        log_event('password_change_failed', user_id=current_user_email, 
-                 details={'reason': 'password_too_short'})
         return jsonify({
             'success': False,
             'message': 'Das neue Passwort muss mindestens 8 Zeichen lang sein'
@@ -99,8 +150,6 @@ def change_password():
         user = db.get_user_by_email(current_user_email)
         
         if not user:
-            log_event('password_change_failed', user_id=current_user_email, 
-                     details={'reason': 'user_not_found'})
             return jsonify({
                 'success': False,
                 'message': 'Benutzer nicht gefunden'
@@ -108,8 +157,6 @@ def change_password():
         
         # Überprüfe das aktuelle Passwort
         if not check_password_hash(user[7], data['currentPassword']):
-            log_event('password_change_failed', user_id=current_user_email, 
-                     details={'reason': 'incorrect_current_password'})
             return jsonify({
                 'success': False,
                 'message': 'Das aktuelle Passwort ist falsch'
@@ -121,9 +168,6 @@ def change_password():
         # Wir verwenden die update_password-Methode, die Data Vault-konform ist
         db.update_password(user[0], new_password_hash)
         
-        log_event('password_change_success', user_id=current_user_email)
-        db.close()
-        
         return jsonify({
             'success': True,
             'message': 'Passwort erfolgreich geändert'
@@ -132,9 +176,9 @@ def change_password():
     except Exception as e:
         print(f"Fehler bei der Passwortänderung: {e}")
         traceback.print_exc()
-        log_event('password_change_failed', user_id=current_user_email, 
-                 details={'reason': 'internal_error', 'error': str(e)})
         return jsonify({
             'success': False,
             'message': 'Ein interner Fehler ist aufgetreten'
         }), 500
+    finally:
+        db.close()
