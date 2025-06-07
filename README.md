@@ -47,6 +47,27 @@ webanwendung-mitarbeiterportal/
 
 ---
 
+## 🗄️ Datenbankstruktur
+
+Das Mitarbeiterportal verwendet eine PostgreSQL-Datenbank mit folgender Struktur:
+
+### Haupttabellen
+- **s_user_details** - Benutzerdaten (Name, Position, Kontaktinformationen, Kernarbeitszeiten)
+- **s_user_login** - Login-Informationen (Hashes für Passwortsicherheit)
+- **h_user** - Hub für Benutzerreferenzen
+- **h_project** - Hub für Projektreferenzen
+- **h_customer** - Hub für Kundenreferenzen
+- **s_project_details** - Projektinformationen (Name, Beschreibung, Start/End-Daten, Budget)
+- **s_customer_details** - Kundeninformationen (Kontaktperson, Adresse)
+- **s_timeentry_details** - Zeiterfassungsdaten (Datum, Start/End-Zeiten, Beschreibung)
+- **s_user_current_project** - Verknüpfung zwischen Nutzern und ihren aktuell zugewiesenen Projekten
+- **h_user_project_timeentry** - Verknüpfungstabelle zwischen Benutzer, Projekt und Zeiteinträgen
+- **app_logs** - Systemprotokolle für Sicherheit und Nachverfolgung
+
+Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und Satellites für bessere Skalierbarkeit und Flexibilität.
+
+---
+
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
@@ -54,24 +75,25 @@ webanwendung-mitarbeiterportal/
 - [✅] Login mit JWT (JSON Web Token) (Datenbank)
 - [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
-- [x] Geschützte Routen mit PrivateRoute-Komponente
+- [✅] Geschützte Routen mit PrivateRoute-Komponente
 - [✅] AuthModal für Login/Registrierung auf der LandingPage
 - [✅] Verbesserte Fehlerbehandlung bei Login/Registrierung
 - [✅] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [✅] Anzeige der Zeitmatrix-Tabelle
-- [✅] Tages- & Wochenansicht (Datenbank)
+- [x] Anzeige der Zeitmatrix-Tabelle
+- [x] Tages- & Wochenansicht (Datenbank)
 - [x] PDF-Export der Wochenübersicht
-- [ ] Automatischer Versand (geplant)
-- [✅] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
-- [✅] Gesamtarbeitszeit über der Tabelle platziert
-- [✅] Filterzeile farblich hervorgehoben
-- [✅] Monats-/Jahresauswahl (Dropdown für 2025)
-- [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
-- [✅] Integration der Zeitmatrix in das Hauptlayout
-- [✅] Kernarbeitszeit-Integration in Zeiteinträge
-- [✅] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
+- [x] Automatischer Versand der Wochenberichte
+- [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
+- [x] Gesamtarbeitszeit über der Tabelle platziert
+- [x] Filterzeile farblich hervorgehoben
+- [x] Monats-/Jahresauswahl (Dropdown für 2025)
+- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [x] Integration der Zeitmatrix in das Hauptlayout
+- [x] Kernarbeitszeit-Integration in Zeiteinträge
+- [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
+- [x] Arbeitsorte für Zeiteinträge (Home-Office, Büro, etc.)
 
 ### 👤 Profil
 - [✅] Anzeige und Bearbeitung von Profildaten (Datenbank)
@@ -85,17 +107,23 @@ webanwendung-mitarbeiterportal/
 - [✅] Projekte anlegen, bearbeiten, löschen
 - [✅] Projektbezogene Zeiterfassung (Datenbank)
 - [✅] Standardprojekt im Profil (Datenbank)
-- [✅] Projektfilterung und Sortierung
-- [✅] Projektstatistiken und Auswertungen
+- [x] Projektfilterung und Sortierung
+- [x] Projektstatistiken und Auswertungen
+- [✅] Kundenzuordnung zu Projekten
+
+### 👥 Kundenverwaltung
+- [✅] Kunden anlegen und verwalten
+- [✅] Zuordnung von Projekten zu Kunden
+- [✅] Kundendetails (Adresse, Kontaktperson)
 
 ### ⚙️ Einstellungen
-- [x] Einstellungsseite
+- [✅] Einstellungsseite
 - [x] Benutzerspezifische Anzeigeoptionen
 - [x] Benachrichtigungseinstellungen
 - [x] Sprache und Region
 - [x] Export-Einstellungen für PDF-Berichte
 
-### 📊 Neue Features
+### 📊 Erweiterte Features
 - [x] Dashboard mit Übersicht der wichtigsten Kennzahlen
 - [x] Erweiterte Suchfunktion für Zeiteinträge
 - [x] Verbesserte mobile Ansicht
@@ -103,24 +131,32 @@ webanwendung-mitarbeiterportal/
 - [x] Echtzeit-Benachrichtigungen
 - [x] Integration von Feier- und Urlaubstagen
 - [x] Automatische Backups der Datenbank
+- [x] Systemprotokollierung für Auditierung und Sicherheit
 ---
 
 ## 🧪 API-Endpunkte (Auswahl)
 
-| Methode | Endpoint               | Beschreibung                                  |
-|---------|------------------------|-----------------------------------------------|
-| POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück (DB) |
-| POST    | `/api/register`        | Neue Registrierung (DB)                       |
-| GET     | `/api/ping`            | Einfacher Health-Check                        |
-| GET     | `/api/status`          | Systemstatus für Healthcheck                  |
-| GET     | `/api/projects`        | Alle Projekte abrufen (DB)                   |
-| GET     | `/api/profile`         | Profildaten abrufen (DB)                     |
-| PUT     | `/api/profile`         | Profildaten aktualisieren (DB)                |
-| PUT     | `/api/change-password` | Passwort ändern (DB)                         |
-| GET     | `/api/time-entries`     | Zeiteinträge abrufen (DB)                     |
-| POST    | `/api/time-entries`     | Neuen Zeiteintrag erstellen (DB)              |
-| PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren (DB)                |
-| DELETE  | `/api/time-entries/<id>`   | Zeiteintrag löschen (DB)                     |
+| Methode | Endpoint                     | Beschreibung                                  |
+|---------|------------------------------|-----------------------------------------------|
+| POST    | `/api/login`                 | Login mit E-Mail/Passwort, gibt JWT zurück    |
+| POST    | `/api/register`              | Neue Registrierung                            |
+| GET     | `/api/ping`                  | Einfacher Health-Check                        |
+| GET     | `/api/status`                | Systemstatus für Healthcheck                  |
+| GET     | `/api/projects`              | Alle Projekte abrufen                         |
+| POST    | `/api/projects`              | Neues Projekt erstellen                       |
+| PUT     | `/api/projects/<id>`         | Projektdaten aktualisieren                    |
+| DELETE  | `/api/projects/<id>`         | Projekt löschen                               |
+| GET     | `/api/customers`             | Alle Kunden abrufen                           |
+| POST    | `/api/customers`             | Neuen Kunden erstellen                        |
+| GET     | `/api/profile`               | Profildaten abrufen                           |
+| PUT     | `/api/profile`               | Profildaten aktualisieren                     |
+| PUT     | `/api/change-password`       | Passwort ändern                               |
+| GET     | `/api/time-entries`          | Zeiteinträge abrufen                          |
+| POST    | `/api/time-entries`          | Neuen Zeiteintrag erstellen                   |
+| PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren                     |
+| DELETE  | `/api/time-entries/<id>`     | Zeiteintrag löschen                           |
+| GET     | `/api/reports/weekly/<week>` | Wochenbericht als PDF generieren              |
+| GET     | `/api/logs`                  | Systemprotokolle abrufen (nur Admin)          |
 
 ---
 
@@ -185,5 +221,3 @@ Richten Sie eine lokale PostgreSQL-Instanz ein oder stellen Sie sicher, dass das
 
 ## ⚖️ Lizenz
 MIT-Lizenz
-
-dummy
