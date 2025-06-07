@@ -93,10 +93,12 @@ export default function Profile() {
     // eslint-disable-next-line
   }, [userData.coreHoursStart, userData.coreHoursEnd]);
 
+  // Verbesserte Fehlerbehandlung in fetchUserData
   const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
+        setError('Sie sind nicht angemeldet');
         navigate('/login');
         return;
       }
@@ -110,12 +112,15 @@ export default function Profile() {
       });
       setUserData(response.data);
     } catch (err) {
+      console.error('Fehler beim Laden der Profildaten:', err);
+      
       if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
+        setError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
         navigate('/login');
+      } else if (err.response?.status === 404) {
+        setError('Benutzerprofil nicht gefunden. Bitte kontaktieren Sie den Administrator.');
       } else {
-        setError('Fehler beim Laden der Benutzerdaten');
-        console.error('Fehler beim Laden der Benutzerdaten:', err);
+        setError('Fehler beim Laden der Profildaten. Bitte versuchen Sie es später erneut.');
       }
     }
   };
@@ -200,55 +205,58 @@ export default function Profile() {
     return true;
   };
 
+  // Neue Validierungsfunktion für Telefonnummern
+  const validatePhoneNumber = (phone) => {
+    // Einfache deutsche Telefonnummern-Validierung
+    // Akzeptiert Formate wie: +49 123 456789, 0123 456789, +49123456789, etc.
+    const regex = /^(\+[0-9]{2}|0)[0-9\s-]{7,}$/;
+    return regex.test(phone);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    
     // Kernarbeitszeit-Validierung vor dem Speichern
     if (!validateCoreHours(userData.coreHoursStart, userData.coreHoursEnd)) {
-      setError('Bitte korrigiere die Kernarbeitszeit.');
       return;
     }
+    
+    // Telefonnummer-Validierung (nur wenn eine angegeben wurde)
+    if (userData.telefon && !validatePhoneNumber(userData.telefon)) {
+      setError('Bitte geben Sie eine gültige Telefonnummer ein');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      // Kombiniere coreHoursStart und coreHoursEnd zu coreHours, falls vorhanden
-      const updatedCoreHours = (userData.coreHoursStart && userData.coreHoursEnd) 
-        ? `${userData.coreHoursStart}-${userData.coreHoursEnd}` 
-        : '';
-
-      // Backend erwartet diese Feldnamen
-      const userDataToUpdate = {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        position: userData.position,
-        coreHours: updatedCoreHours,
-        telefon: userData.telefon,
-        currentProject: userData.currentProject // Auch currentProject kann hier geupdated werden
+      
+      // Daten konsistent an das Backend senden
+      const profileData = {
+        ...userData,
+        current_project: userData.currentProject // Diese Zeile hinzufügen
       };
-
-      await axios.put('/api/profile', userDataToUpdate, {
+      delete profileData.currentProject; // Optional: originales Feld entfernen
+      
+      const response = await axios.put('/api/profile', profileData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         withCredentials: true
       });
+      
       setSuccess('Profil erfolgreich aktualisiert!');
-      setIsEditing(false); // Bearbeitungsmodus verlassen nach erfolgreichem Speichern
-      // Fetch user data again to update the displayed information
-      fetchUserData();
+      setIsEditing(false);
     } catch (err) {
       if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
+        setError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
         navigate('/login');
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
       } else {
-        setError('Fehler beim Aktualisieren des Profils.');
-        console.error('Fehler beim Aktualisieren des Profils:', err.response?.data || err);
+        setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
       }
     }
   };
@@ -260,26 +268,28 @@ export default function Profile() {
     setPasswordSuccess('');
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('Neue Passwörter stimmen nicht überein.');
+      setPasswordError('Die Passwörter stimmen nicht überein');
       return;
     }
 
     if (!currentPassword || !newPassword) {
-        setPasswordError('Aktuelles und neues Passwort müssen angegeben werden.');
-        return;
+      setPasswordError('Bitte füllen Sie alle Felder aus');
+      return;
     }
 
     if (newPassword.length < 8) {
-        setPasswordError('Neues Passwort muss mindestens 8 Zeichen lang sein.');
-        return;
+      setPasswordError('Das neue Passwort muss mindestens 8 Zeichen lang sein');
+      return;
     }
 
     const token = localStorage.getItem('access_token');
 
     try {
-      await axios.put('/api/change-password', {
-        currentPassword: currentPassword,
-        newPassword: newPassword
+      // Änderung von axios.put auf axios.post
+      const response = await axios.post('/api/change-password', {
+        currentPassword,
+        newPassword,
+        confirmPassword: confirmNewPassword // Feld umbenennen für Backend-Konsistenz
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -287,17 +297,18 @@ export default function Profile() {
         },
         withCredentials: true
       });
-      setPasswordSuccess('Passwort erfolgreich geändert!');
+
+      setPasswordSuccess('Passwort erfolgreich geändert');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
-
     } catch (err) {
       if (err.response?.status === 401) {
-          setPasswordError('Aktuelles Passwort ist falsch.');
+        setPasswordError('Das aktuelle Passwort ist falsch');
+      } else if (err.response?.data?.message) {
+        setPasswordError(err.response.data.message);
       } else {
-          setPasswordError('Fehler beim Ändern des Passworts.');
-          console.error('Fehler beim Ändern des Passworts:', err.response?.data || err);
+        setPasswordError('Ein Fehler ist aufgetreten');
       }
     }
   };
@@ -460,7 +471,11 @@ export default function Profile() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Aktuelles Projekt</h3>
-              <p className="mt-1 text-lg">{userData.currentProject || '-'}</p>
+              <p className="mt-1 text-lg">
+                {userData.currentProject ? 
+                  (projects.find(p => p.hk_project === userData.currentProject)?.project_name || userData.currentProject)
+                  : '-'}
+              </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Kernarbeitszeit</h3>
@@ -539,4 +554,3 @@ export default function Profile() {
     </div>
   );
 }
-  

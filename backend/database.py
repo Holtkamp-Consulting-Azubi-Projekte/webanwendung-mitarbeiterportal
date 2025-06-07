@@ -227,3 +227,32 @@ class Database:
             ORDER BY p.project_name
             """
         )
+
+    def get_all_projects(self):
+        """
+        Holt alle Projekte aus der Datenbank.
+        
+        Returns:
+            list: Eine Liste von Projekt-Dictionaries mit hk_project und project_name
+        """
+        try:
+            # Stelle sicher, dass eine Verbindung und ein Cursor existieren
+            self.connect()
+            query = """
+            SELECT h.hk_project, s.project_name 
+            FROM h_project h
+            JOIN s_project_details s ON h.hk_project = s.hk_project
+            WHERE h.t_to IS NULL OR h.t_to >= CURRENT_TIMESTAMP
+            ORDER BY s.project_name
+            """
+            self.cursor.execute(query)
+            projects = []
+            for row in self.cursor.fetchall():
+                projects.append({
+                    "hk_project": row[0],
+                    "project_name": row[1]
+                })
+            return projects
+        except Exception as e:
+            print(f"Error getting projects: {e}")
+            raise e

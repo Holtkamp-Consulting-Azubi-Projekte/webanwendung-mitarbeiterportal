@@ -4,7 +4,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from log import log_event
 from database import Database
-import hashlib
 import traceback
 
 auth_bp = Blueprint("auth", __name__)
@@ -127,6 +126,7 @@ def login():
 @auth_bp.route("/api/protected", methods=["GET"])
 @jwt_required()
 def protected():
+    """Test-Endpunkt für JWT-Authentifizierung."""
     current_user = get_jwt_identity()
     return jsonify(logged_in_as=current_user), 200
 

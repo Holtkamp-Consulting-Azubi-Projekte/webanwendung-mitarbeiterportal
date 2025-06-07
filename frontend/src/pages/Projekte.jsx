@@ -24,9 +24,31 @@ export default function Projekte() {
 
   // Projekte laden
   function ladeProjekte() {
-    fetch("/api/projects")
-      .then(res => res.json())
-      .then(setProjekte);
+    // Token für authentifizierte Anfragen hinzufügen
+    const token = localStorage.getItem('access_token');
+    
+    fetch("/api/projects", {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP-Fehler: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('Projekte geladen:', data);
+        // Sicherstellen, dass data ein Array ist
+        setProjekte(Array.isArray(data) ? data : []);
+      })
+      .catch(err => {
+        console.error('Fehler beim Laden der Projekte:', err);
+        // Bei Fehler leeres Array setzen
+        setProjekte([]);
+      });
   }
 
   // Kunden laden

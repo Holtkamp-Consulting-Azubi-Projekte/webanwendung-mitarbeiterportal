@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app as app
 import psycopg2
 import hashlib
 from datetime import datetime
+from flask_jwt_extended import jwt_required
 
 project_bp = Blueprint("project", __name__)
 customer_bp = Blueprint("customer", __name__)
@@ -19,12 +20,22 @@ def parse_date(date_str):
         return None
 
 def get_db_conn():
-    return psycopg2.connect(
+    """
+    Stellt eine Verbindung zur Datenbank her und gibt diese zurück.
+    
+    Returns:
+        psycopg2.connection: Eine aktive Datenbankverbindung
+    """
+    import psycopg2
+    from flask import current_app as app
+    
+    conn = psycopg2.connect(
         host=app.config["DB_HOST"],
         database=app.config["DB_NAME"],
         user=app.config["DB_USER"],
         password=app.config["DB_PASSWORD"],
     )
+    return conn
 
 def hash_hex(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -34,6 +45,7 @@ def none_if_empty(val):
 
 # --- Projekte auflisten (nur aktuelle Satelliten) ---
 @project_bp.route("/api/projects", methods=["GET"])
+@jwt_required()  # Diese Zeile hinzufügen
 def get_projects():
     conn = get_db_conn()
     cur = conn.cursor()
