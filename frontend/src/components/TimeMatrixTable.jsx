@@ -1,6 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
+
+// Einfache Version des Beschreibungs-Popup
+const DescriptionPopup = ({ description }) => {
+  if (!description) return null;
+  
+  return (
+    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
+                    bg-white p-6 rounded-lg shadow-xl border border-gray-300 z-50
+                    max-w-lg w-full max-h-[80vh] overflow-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">Beschreibung</h3>
+        <button className="text-gray-500 hover:text-gray-700" id="closePopup">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div className="text-gray-700 whitespace-pre-wrap">{description}</div>
+    </div>
+  );
+};
+
+// Overlay für den Hintergrund
+const Overlay = ({ onClose }) => (
+  <div 
+    className="fixed inset-0 bg-black bg-opacity-50 z-40"
+    onClick={onClose}
+  />
+);
 
 const TimeMatrixTable = ({
   entries,
@@ -11,6 +40,42 @@ const TimeMatrixTable = ({
   onFilterChange,
   availableProjekte
 }) => {
+  // State für den Popup-Dialog
+  const [activeDescription, setActiveDescription] = useState(null);
+  
+  // Popup schließen, wenn ESC gedrückt wird
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        setActiveDescription(null);
+      }
+    };
+    
+    if (activeDescription) {
+      document.addEventListener('keydown', handleEsc);
+      // Scrolling auf dem Body verhindern
+      document.body.style.overflow = 'hidden';
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      // Scrolling wiederherstellen
+      document.body.style.overflow = '';
+    };
+  }, [activeDescription]);
+  
+  // Popup schließen, wenn auf das X oder den Hintergrund geklickt wird
+  useEffect(() => {
+    const closeBtn = document.getElementById('closePopup');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => setActiveDescription(null));
+      
+      return () => {
+        closeBtn.removeEventListener('click', () => setActiveDescription(null));
+      };
+    }
+  }, [activeDescription]);
+  
   // Gruppierung der Einträge nach Datum
   const entriesByDate = entries.reduce((acc, entry) => {
     const date = entry.datum;
@@ -70,7 +135,15 @@ const TimeMatrixTable = ({
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto relative">
+      {/* Overlay und Popup für Beschreibungen */}
+      {activeDescription && (
+        <>
+          <Overlay onClose={() => setActiveDescription(null)} />
+          <DescriptionPopup description={activeDescription} />
+        </>
+      )}
+      
       <div className="mb-4 flex justify-between items-center">
         <h2 className="text-xl font-bold">Zeiteinträge</h2>
         
@@ -163,9 +236,23 @@ const TimeMatrixTable = ({
                     <td className="py-2 px-4 border-b border-gray-200">
                       {entry.arbeitsort}
                     </td>
-                    <td className="py-2 px-4 border-b border-gray-200">
-                      {entry.beginn} - {entry.ende}
-                      {entry.pause && parseInt(entry.pause, 10) > 0 && ` (${entry.pause} min Pause)`}
+                    <td className="px-4 py-2 border-b">
+                      {entry.beginn} - {entry.ende} 
+                      {entry.pause ? `(${entry.pause} min Pause)` : ''}
+                      {entry.beschreibung && (
+                        <button 
+                          className="ml-2 p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDescription(entry.beschreibung);
+                          }}
+                          title="Beschreibung anzeigen"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      )}
                     </td>
                     <td className="py-2 px-4 border-b border-gray-200 text-center">
                       {calculateWorkingHours(entry)}
