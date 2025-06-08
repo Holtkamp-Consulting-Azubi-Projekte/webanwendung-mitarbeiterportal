@@ -37,7 +37,7 @@ export default function ProjectForm({
   initialValues = {},
   kunden = [],
   onSubmit,
-  submitText = "Speichern",
+  submitText = "Projekt anlegen",
   disabled = false
 }) {
   const [formData, setFormData] = useState({
@@ -65,10 +65,27 @@ export default function ProjectForm({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (onSubmit) onSubmit(formData);
-  }
+    
+    // Formularwerte vor dem Absenden transformieren
+    const submitData = { ...formData };
+    
+    // Stellen sicher, dass budget_days eine Zahl oder null ist
+    if (submitData.budget_days === "") {
+      submitData.budget_days = null;
+    } else if (submitData.budget_days) {
+      // Versuchen, in Ganzzahl umzuwandeln
+      const budgetAsNumber = parseInt(submitData.budget_days, 10);
+      if (!isNaN(budgetAsNumber)) {
+        submitData.budget_days = budgetAsNumber;
+      } else {
+        submitData.budget_days = null;
+      }
+    }
+    
+    onSubmit(submitData);
+  };
 
   return (
     <form onSubmit={handleSubmit} className="mb-6 bg-gray-50 p-4 rounded-xl shadow">

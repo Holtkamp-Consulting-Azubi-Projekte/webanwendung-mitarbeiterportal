@@ -49,31 +49,31 @@ webanwendung-mitarbeiterportal/
 
 ## 🗄️ Datenbankstruktur
 
-Das Mitarbeiterportal verwendet eine PostgreSQL-Datenbank mit folgender Struktur:
+Das Mitarbeiterportal verwendet eine PostgreSQL-Datenbank nach dem Data Vault 2.0 Modellierungsansatz mit folgender Struktur:
 
 ### Haupttabellen
+- **h_user** - Hub für Benutzerreferenzen (UUID als Primary Key)
+- **h_project** - Hub für Projektreferenzen (UUID)
+- **h_customer** - Hub für Kundenreferenzen (UUID)
 - **s_user_details** - Benutzerdaten (Name, Position, Kontaktinformationen, Kernarbeitszeiten)
 - **s_user_login** - Login-Informationen (Hashes für Passwortsicherheit)
-- **h_user** - Hub für Benutzerreferenzen
-- **h_project** - Hub für Projektreferenzen
-- **h_customer** - Hub für Kundenreferenzen
 - **s_project_details** - Projektinformationen (Name, Beschreibung, Start/End-Daten, Budget)
 - **s_customer_details** - Kundeninformationen (Kontaktperson, Adresse)
 - **s_timeentry_details** - Zeiterfassungsdaten (Datum, Start/End-Zeiten, Beschreibung)
 - **s_user_current_project** - Verknüpfung zwischen Nutzern und ihren aktuell zugewiesenen Projekten
-- **h_user_project_timeentry** - Verknüpfungstabelle zwischen Benutzer, Projekt und Zeiteinträgen
+- **l_user_project_timeentry** - Verknüpfungstabelle zwischen Benutzer, Projekt und Zeiteinträgen
 - **app_logs** - Systemprotokolle für Sicherheit und Nachverfolgung
 
-Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und Satellites für bessere Skalierbarkeit und Flexibilität.
+Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Skalierbarkeit und Flexibilität.
 
 ---
 
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
-- [✅] Registrierung mit Passwort-Hashing (Datenbank)
-- [✅] Login mit JWT (JSON Web Token) (Datenbank)
-- [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
+- [✅] Registrierung mit Passwort-Hashing
+- [✅] Login mit JWT (JSON Web Token)
+- [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt)
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
 - [✅] Geschützte Routen mit PrivateRoute-Komponente
 - [✅] AuthModal für Login/Registrierung auf der LandingPage
@@ -82,7 +82,7 @@ Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und S
 
 ### 🕒 Zeiterfassung
 - [x] Anzeige der Zeitmatrix-Tabelle
-- [x] Tages- & Wochenansicht (Datenbank)
+- [x] Tages- & Wochenansicht
 - [x] PDF-Export der Wochenübersicht
 - [x] Automatischer Versand der Wochenberichte
 - [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
@@ -96,25 +96,26 @@ Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und S
 - [x] Arbeitsorte für Zeiteinträge (Home-Office, Büro, etc.)
 
 ### 👤 Profil
-- [✅] Anzeige und Bearbeitung von Profildaten (Datenbank)
+- [✅] Anzeige und Bearbeitung von Profildaten
 - [✅] Kernarbeitszeit-Einstellung mit grundlegender Validierung
-- [✅] Standardprojekt-Auswahl (Datenbank)
-- [✅] Passwortänderung (Datenbank)
-- [✅] Telefonnummer und Position (Datenbank)
+- [✅] Standardprojekt-Auswahl
+- [✅] Passwortänderung
+- [✅] Telefonnummer und Position
 
 ### 📁 Projektverwaltung
-- [✅] Projekte abrufen und anzeigen (Datenbank)
+- [✅] Projekte abrufen und anzeigen
 - [✅] Projekte anlegen, bearbeiten, löschen
-- [✅] Projektbezogene Zeiterfassung (Datenbank)
-- [✅] Standardprojekt im Profil (Datenbank)
+- [✅] Projektbezogene Zeiterfassung
+- [✅] Standardprojekt im Profil
 - [x] Projektfilterung und Sortierung
 - [x] Projektstatistiken und Auswertungen
 - [✅] Kundenzuordnung zu Projekten
 
 ### 👥 Kundenverwaltung
-- [✅] Kunden anlegen und verwalten
+- [✅] Kunden anlegen, bearbeiten und löschen
 - [✅] Zuordnung von Projekten zu Kunden
 - [✅] Kundendetails (Adresse, Kontaktperson)
+- [✅] Historisierung statt physisches Löschen (Data Vault-Prinzip)
 
 ### ⚙️ Einstellungen
 - [✅] Einstellungsseite
@@ -132,6 +133,14 @@ Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und S
 - [x] Integration von Feier- und Urlaubstagen
 - [x] Automatische Backups der Datenbank
 - [x] Systemprotokollierung für Auditierung und Sicherheit
+
+### 💾 Technische Verbesserungen
+- [✅] Migration von BYTEA zu UUID für alle Primär- und Fremdschlüssel
+- [✅] Optimierte Datenbankabfragen mit TEXT-Typkonvertierungen
+- [✅] Data Vault 2.0 Konformität mit korrekter Historisierung
+- [✅] Fehlerbehandlung für leere Strings bei numerischen Feldern
+- [✅] Entfernung von Debug-Ausgaben in der Entwicklungsumgebung
+
 ---
 
 ## 🧪 API-Endpunkte (Auswahl)
@@ -144,10 +153,12 @@ Die Datenbank folgt dem Data Vault 2.0 Modellierungsansatz mit Hubs, Links und S
 | GET     | `/api/status`                | Systemstatus für Healthcheck                  |
 | GET     | `/api/projects`              | Alle Projekte abrufen                         |
 | POST    | `/api/projects`              | Neues Projekt erstellen                       |
-| PUT     | `/api/projects/<id>`         | Projektdaten aktualisieren                    |
-| DELETE  | `/api/projects/<id>`         | Projekt löschen                               |
+| PUT     | `/api/projects/<hk_project>` | Projektdaten aktualisieren                    |
+| DELETE  | `/api/projects/<hk_project>` | Projekt löschen                               |
 | GET     | `/api/customers`             | Alle Kunden abrufen                           |
 | POST    | `/api/customers`             | Neuen Kunden erstellen                        |
+| PUT     | `/api/customers/<hk_customer>` | Kundendaten aktualisieren                   |
+| DELETE  | `/api/customers/<hk_customer>` | Kunde löschen                               |
 | GET     | `/api/profile`               | Profildaten abrufen                           |
 | PUT     | `/api/profile`               | Profildaten aktualisieren                     |
 | PUT     | `/api/change-password`       | Passwort ändern                               |

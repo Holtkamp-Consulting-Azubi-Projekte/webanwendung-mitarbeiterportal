@@ -5,6 +5,7 @@ from datetime import datetime
 from log import log_event
 from database import Database
 import traceback
+import uuid  # Stelle sicher, dass uuid importiert wird
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -45,12 +46,26 @@ def register():
             }), 400
         print("Erstelle neuen Benutzer...")
         password_hash = generate_password_hash(data['password'])
+        
+        # ENTWEDER Option 1: Verwende die insert_user-Methode (empfohlen)
         db.insert_user(
             data['email'],
             data['firstName'],
             data['lastName'],
             password_hash
         )
+        
+        # ODER Option 2: Manuelles Einfügen (aber nicht beides!)
+        # hk_user = str(uuid.uuid4())
+        # user_id = data.get('email')
+        # db.execute(
+        #     """
+        #     INSERT INTO h_user (hk_user, user_id, t_from, rec_src)
+        #     VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+        #     """, 
+        #     (hk_user, user_id, 'WEB_APP')
+        # )
+        
         log_event('registration_success', user_id=data['email'])
         print("Registrierung erfolgreich abgeschlossen")
         db.close()

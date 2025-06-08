@@ -5,8 +5,10 @@ Implementiert die direkte PostgreSQL-Verbindung mit psycopg2.
 
 import psycopg2
 import os
+import traceback
 from datetime import datetime
 import hashlib
+import uuid
 
 class Database:
     def __init__(self):
@@ -19,11 +21,11 @@ class Database:
         """Stellt die Verbindung zur Datenbank her."""
         try:
             self.conn = psycopg2.connect(
-                dbname="mitarbeiterportal",
-                user="admin",
-                password="secret",
-                host="db",
-                port="5432"
+                host=os.getenv('DB_HOST', 'db'),
+                port=os.getenv('DB_PORT', '5432'),
+                dbname=os.getenv('DB_NAME', 'mitarbeiterportal'),
+                user=os.getenv('DB_USER', 'admin'),
+                password=os.getenv('DB_PASSWORD', 'secret')
             )
             self.cur = self.conn.cursor()
             print("Datenbankverbindung erfolgreich hergestellt")
@@ -34,76 +36,33 @@ class Database:
     def _ensure_tables_exist(self):
         """Stellt sicher, dass alle benötigten Tabellen existieren."""
         try:
-            # Stelle sicher, dass die h_project Tabelle existiert
-            self.execute("""
-                CREATE TABLE IF NOT EXISTS h_project (
-                    hk_project BYTEA PRIMARY KEY,
-                    t_from TIMESTAMPTZ NOT NULL,
-                    rec_src VARCHAR(50) NOT NULL
-                )
+            # Prüfe, ob h_user existiert, wenn nicht, führe das init-Skript aus
+            self.cur.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'h_user'
+                );
             """)
+            tables_exist = self.cur.fetchone()[0]
             
-            # Stelle sicher, dass die s_project_details Tabelle existiert
-            self.execute("""
-                CREATE TABLE IF NOT EXISTS s_project_details (
-                    hk_project BYTEA NOT NULL,
-                    t_from TIMESTAMPTZ NOT NULL,
-                    t_to TIMESTAMPTZ NULL,
-                    b_from DATE NOT NULL,
-                    b_to DATE NULL,
-                    rec_src VARCHAR(50) NOT NULL,
-                    project_name VARCHAR(255) NOT NULL,
-                    project_description TEXT,
-                    PRIMARY KEY (hk_project, t_from)
-                )
-            """)
-            
-            # Stelle sicher, dass die s_user_current_project Tabelle existiert
-            self.execute("""
-                CREATE TABLE IF NOT EXISTS s_user_current_project (
-                    hk_user BYTEA NOT NULL,
-                    hk_project BYTEA NOT NULL,
-                    t_from TIMESTAMPTZ NOT NULL,
-                    t_to TIMESTAMPTZ NULL,
-                    b_from DATE NOT NULL,
-                    b_to DATE NULL,
-                    rec_src VARCHAR(50) NOT NULL,
-                    PRIMARY KEY (hk_user, hk_project, t_from)
-                )
-            """)
-            
-            # Stellen wir sicher, dass wir mindestens ein Projekt in der Datenbank haben
-            demo_project_exists = self.fetch_one("""
-                SELECT COUNT(*) FROM h_project WHERE hk_project = decode('4e7c8d33478994a51580d56cf1c10493c23f5667091241a369582fc50c42d136', 'hex')
-            """)
-            
-            if not demo_project_exists or demo_project_exists[0] == 0:
-                now = datetime.utcnow()
-                today = datetime.now().date()
+            if not tables_exist:
+                print("Tabellen existieren nicht. Initialisiere Datenbankschema...")
+                # Pfad zur SQL-Datei
+                script_path = os.path.join(os.path.dirname(__file__), 'init_data_vault.sql')
                 
-                # Füge ein Demo-Projekt hinzu
-                hk_project = bytes.fromhex('4e7c8d33478994a51580d56cf1c10493c23f5667091241a369582fc50c42d136')
-                
-                self.execute("""
-                    INSERT INTO h_project (hk_project, t_from, rec_src)
-                    VALUES (%s, %s, %s)
-                """, (hk_project, now, 'SYSTEM'))
-                
-                self.execute("""
-                    INSERT INTO s_project_details 
-                    (hk_project, t_from, b_from, rec_src, project_name, project_description)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (hk_project, now, today, 'SYSTEM', 'Demo-Projekt', 'Ein Demo-Projekt für Tests'))
-                
-                self.commit()
-                print("Demo-Projekt erstellt")
-            
-            self.commit()
-            print("Tabellen-Check abgeschlossen")
+                with open(script_path, 'r') as f:
+                    sql_script = f.read()
+                    self.cur.execute(sql_script)
+                    self.conn.commit()
+                    print("Datenbankschema erfolgreich initialisiert!")
+            else:
+                print("Datenbankschema bereits vorhanden.")
+        
         except Exception as e:
-            print(f"Fehler bei Tabellen-Check: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Fehler bei der Datenbankinitialisierung: {e}")
+            self.conn.rollback()
+            raise
 
     def close(self):
         """Schließt die Datenbankverbindung."""
@@ -143,107 +102,76 @@ class Database:
         return self.cur.fetchall()
 
     def insert_user(self, email, first_name, last_name, password_hash):
-        """Fügt einen neuen Benutzer hinzu."""
+        """Fügt einen neuen Benutzer in die Datenbank ein."""
         try:
-            # Hash-Key für den Benutzer generieren
-            hk_user = hashlib.sha256(email.encode()).digest()
-            now = datetime.utcnow()
-            today = datetime.now().date()
-
-            # Benutzer in H_USER einfügen
+            # UUID als String verwenden
+            hk_user = str(uuid.uuid4())
+            
+            # 1. Einfügen in h_user
             self.execute(
                 """
                 INSERT INTO h_user (hk_user, user_id, t_from, rec_src)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (hk_user, email, now, 'API')
+                VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+                """, 
+                (hk_user, email, 'WEB_APP')
             )
-
-            # Benutzerdetails in S_USER_DETAILS einfügen
+            
+            # 2. Einfügen in s_user_details
             self.execute(
                 """
-                INSERT INTO s_user_details 
-                (hk_user, t_from, b_from, rec_src, first_name, last_name)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO s_user_details (hk_user, t_from, b_from, rec_src, first_name, last_name)
+                VALUES (%s, CURRENT_TIMESTAMP, CURRENT_DATE, %s, %s, %s)
                 """,
-                (hk_user, now, today, 'API', first_name, last_name)
+                (hk_user, 'WEB_APP', first_name, last_name)
             )
-
-            # Login-Daten in S_USER_LOGIN einfügen
+            
+            # 3. Einfügen in s_user_login
             self.execute(
                 """
-                INSERT INTO s_user_login 
-                (hk_user, t_from, b_from, rec_src, password_hash)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO s_user_login (hk_user, t_from, b_from, rec_src, password_hash)
+                VALUES (%s, CURRENT_TIMESTAMP, CURRENT_DATE, %s, %s)
                 """,
-                (hk_user, now, today, 'API', password_hash)
+                (hk_user, 'WEB_APP', password_hash)
             )
-
-            self.commit()
+            
+            self.conn.commit()
             return hk_user
         except Exception as e:
-            self.rollback()
-            print(f"Fehler in insert_user: {e}")
+            self.conn.rollback()
+            print(f"Fehler beim Einfügen des Benutzers: {e}")
+            traceback.print_exc()
             raise
 
     def get_user_by_email(self, email):
-        """
-        Holt einen Benutzer anhand seiner E-Mail-Adresse.
-        Stellt sicher, dass das neueste Passwort und aktuelle Projekt verwendet wird.
-        """
+        """Sucht einen Benutzer anhand der E-Mail-Adresse."""
         try:
-            print(f"🔍 Suche Benutzer mit E-Mail: {email}")
-            
+            print(f"Suche nach Benutzer mit E-Mail: {email}")
             sql = """
-                SELECT
-                    u.hk_user,
-                    u.user_id,
-                    d.first_name,
-                    d.last_name,
-                    d.position,
-                    d.core_hours,
-                    d.telefon,
-                    (SELECT password_hash FROM s_user_login 
-                     WHERE hk_user = u.hk_user AND t_to IS NULL 
-                     ORDER BY t_from DESC LIMIT 1) AS password_hash,
-                    (SELECT encode(hk_project, 'hex') FROM s_user_current_project 
-                     WHERE hk_user = u.hk_user AND t_to IS NULL 
-                     ORDER BY t_from DESC LIMIT 1) AS current_project
-                FROM h_user u
-                JOIN s_user_details d ON u.hk_user = d.hk_user AND d.t_to IS NULL
-                WHERE u.user_id = %s
+                SELECT 
+                    hu.hk_user::text,
+                    hu.user_id,
+                    sud.first_name,
+                    sud.last_name,
+                    sud.position,
+                    sud.core_hours,
+                    sud.telefon,
+                    sul.password_hash,
+                    (SELECT sucp.hk_project::text FROM s_user_current_project sucp 
+                     WHERE sucp.hk_user = hu.hk_user AND sucp.t_to IS NULL 
+                     ORDER BY sucp.t_from DESC LIMIT 1) as current_project
+                FROM h_user hu
+                LEFT JOIN s_user_details sud ON hu.hk_user = sud.hk_user
+                    AND sud.t_to IS NULL
+                LEFT JOIN s_user_login sul ON hu.hk_user = sul.hk_user
+                    AND sul.t_to IS NULL
+                WHERE hu.user_id = %s
+                LIMIT 1
             """
-            
             result = self.fetch_one(sql, (email,))
-            
-            if result:
-                print(f"✅ Benutzer gefunden: {result[1]}")
-                print(f"✅ Aktuelles Projekt aus DB: {result[8]}")
-                
-                # Extra Debug: Prüfe direkt die Projekttabelle
-                current_projects = self.fetch_all("""
-                    SELECT encode(hk_project, 'hex'), t_from, t_to
-                    FROM s_user_current_project
-                    WHERE hk_user = %s
-                    ORDER BY t_from DESC
-                """, (result[0],))
-                
-                if current_projects:
-                    print(f"🔍 Gefundene Projekte für {email}:")
-                    for p in current_projects:
-                        status = "AKTIV" if p[2] is None else f"INAKTIV (bis {p[2]})"
-                        print(f"  - {p[0]} (seit {p[1]}) - {status}")
-                else:
-                    print(f"⚠️ Keine Projekte in s_user_current_project für {email} gefunden")
-                
-                return result
-            else:
-                print(f"⚠️ Kein Benutzer mit E-Mail {email} gefunden")
-                return None
-            
+            print(f"Gefundener Benutzer: {result}")
+            return result
         except Exception as e:
-            print(f"❌ Fehler in get_user_by_email: {e}")
-            import traceback
+            print(f"Fehler beim Abrufen des Benutzers: {e}")
             traceback.print_exc()
             return None
 
@@ -344,7 +272,7 @@ class Database:
             list: Eine Liste von Projekt-Dictionaries mit hk_project und project_name
         """
         result = self.fetch_all("""
-            SELECT encode(h.hk_project, 'hex') as hk_project_hex, s.project_name 
+            SELECT h.hk_project::text as hk_project_hex, s.project_name 
             FROM h_project h
             JOIN s_project_details s ON h.hk_project = s.hk_project
             WHERE s.t_to IS NULL
@@ -429,7 +357,7 @@ class Database:
                 
                 # Nach dem Einfügen überprüfen, ob die Verknüpfung erstellt wurde
                 check = self.fetch_one("""
-                    SELECT encode(hk_project, 'hex')
+                    SELECT hk_project::text
                     FROM s_user_current_project
                     WHERE hk_user = %s AND hk_project = %s AND t_to IS NULL
                 """, (hk_user, hk_project))
