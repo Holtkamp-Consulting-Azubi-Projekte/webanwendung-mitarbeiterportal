@@ -189,12 +189,12 @@ const Zeitmatrix = () => {
     setModalOpen(true);
   };
 
-  // Eintrag speichern
   const handleSaveEntry = async (formData) => {
     try {
+      setError(null);
       const token = localStorage.getItem('access_token');
-      let response;
       
+      let response;
       if (editingEntry) {
         // Bestehenden Eintrag aktualisieren
         response = await axios.put(
@@ -210,22 +210,50 @@ const Zeitmatrix = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
-
-      // Bei erfolgreicher Speicherung, Daten neu laden
+      
       if (response.data.success) {
-        // Daten neu laden
-        const updatedEntries = await axios.get(API_URL, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // Nach erfolgreicher Speicherung Einträge komplett neu laden 
+        // statt lokale State-Updates zu machen
+        await fetchEntries();
         
-        setEntries(updatedEntries.data);
         setModalOpen(false);
         setEditingEntry(null);
         setNewEntryInitialData(null);
+      } else {
+        setError(response.data.error || "Unbekannter Fehler beim Speichern");
       }
     } catch (err) {
       console.error("Fehler beim Speichern:", err);
-      alert(`Fehler beim Speichern: ${err.response?.data?.error || 'Unbekannter Fehler'}`);
+      setError(`Fehler beim Speichern: ${err.response?.data?.error || err.message || 'Unbekannter Fehler'}`);
+    }
+  };
+
+  // Die fetchEntries-Funktion solltest du optimieren, um Duplikate zu vermeiden:
+  const fetchEntries = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Stellen sicher, dass keine Duplikate vorhanden sind, 
+      // indem wir ein Map-Objekt basierend auf der ID verwenden
+      const entriesMap = new Map();
+      response.data.forEach(entry => {
+        entriesMap.set(entry.id, entry);
+      });
+      
+      // In ein Array zurückkonvertieren, um keine Duplikate zu haben
+      const uniqueEntries = Array.from(entriesMap.values());
+      
+      setEntries(uniqueEntries);
+      setLoading(false);
+    } catch (err) {
+      console.error("Fehler beim Laden der Einträge:", err);
+      setError(`Fehler beim Laden der Einträge: ${err.response?.data?.error || err.message || 'Unbekannter Fehler'}`);
+      setLoading(false);
     }
   };
 
