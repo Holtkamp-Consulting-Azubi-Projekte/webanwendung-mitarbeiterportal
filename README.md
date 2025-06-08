@@ -2,7 +2,7 @@
 
 ## 🔥 Kurzbeschreibung
 
-Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projektverwaltung und einem wöchentlichen PDF-Export. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und nutzt eine **PostgreSQL-Datenbank**.
+Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projekt- und Kundenverwaltung sowie einem Dashboard mit Visualisierungen. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und nutzt eine **PostgreSQL-Datenbank**.
 
 ---
 
@@ -20,6 +20,7 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 - Tailwind CSS
 - JSX-Komponentenstruktur
 - Routing via `react-router-dom`
+- Chart.js & react-chartjs-2 für Visualisierungen
 
 ---
 
@@ -31,8 +32,9 @@ webanwendung-mitarbeiterportal/
 │   ├── app.py
 │   ├── auth.py
 │   ├── time_matrix.py
+│   ├── dashboard.py
 │   ├── requirements.txt
-│   └── init_data_vault.sql # Nach backend/ verschoben
+│   └── init_data_vault.sql
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable, auth/
@@ -43,6 +45,7 @@ webanwendung-mitarbeiterportal/
 ├── dokumentation/
 ├── .gitignore
 ├── README.md
+├── docker-compose.yml
 ```
 
 ---
@@ -81,19 +84,18 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 - [✅] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [x] Anzeige der Zeitmatrix-Tabelle
+- [✅] Anzeige der Zeitmatrix-Tabelle
 - [x] Tages- & Wochenansicht
 - [x] PDF-Export der Wochenübersicht
-- [x] Automatischer Versand der Wochenberichte
-- [x] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
-- [x] Gesamtarbeitszeit über der Tabelle platziert
+- [✅] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
+- [✅] Gesamtarbeitszeit über der Tabelle platziert
 - [x] Filterzeile farblich hervorgehoben
 - [x] Monats-/Jahresauswahl (Dropdown für 2025)
-- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
-- [x] Integration der Zeitmatrix in das Hauptlayout
-- [x] Kernarbeitszeit-Integration in Zeiteinträge
+- [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [✅] Integration der Zeitmatrix in das Hauptlayout
+- [✅] Kernarbeitszeit-Integration in Zeiteinträge
 - [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
-- [x] Arbeitsorte für Zeiteinträge (Home-Office, Büro, etc.)
+- [✅] Arbeitsorte für Zeiteinträge (Home-Office, Büro, etc.)
 
 ### 👤 Profil
 - [✅] Anzeige und Bearbeitung von Profildaten
@@ -107,8 +109,6 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 - [✅] Projekte anlegen, bearbeiten, löschen
 - [✅] Projektbezogene Zeiterfassung
 - [✅] Standardprojekt im Profil
-- [x] Projektfilterung und Sortierung
-- [x] Projektstatistiken und Auswertungen
 - [✅] Kundenzuordnung zu Projekten
 
 ### 👥 Kundenverwaltung
@@ -117,22 +117,21 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 - [✅] Kundendetails (Adresse, Kontaktperson)
 - [✅] Historisierung statt physisches Löschen (Data Vault-Prinzip)
 
+### 📊 Dashboard
+- [✅] Übersicht der wichtigsten Kennzahlen (Arbeitstage, Gesamtstunden, Top-Projekt)
+- [✅] Balkendiagramm: Stunden pro Tag (Woche)
+- [✅] Kreisdiagramm: Projektverteilung
+- [✅] Kreisdiagramm: Arbeitsorte (letzte 30 Tage)
+- [x] Filter nach Zeitraum, Mitarbeiter, Projekt (geplant)
+- [x] Vergleich Soll-/Ist-Stunden, Über-/Unterstunden pro Mitarbeiter (geplant)
+- [x] Erweiterte Tabellen und Visualisierungen (geplant)
+
 ### ⚙️ Einstellungen
 - [✅] Einstellungsseite
 - [x] Benutzerspezifische Anzeigeoptionen
 - [x] Benachrichtigungseinstellungen
 - [x] Sprache und Region
 - [x] Export-Einstellungen für PDF-Berichte
-
-### 📊 Erweiterte Features
-- [x] Dashboard mit Übersicht der wichtigsten Kennzahlen
-- [x] Erweiterte Suchfunktion für Zeiteinträge
-- [x] Verbesserte mobile Ansicht
-- [x] Dark Mode
-- [x] Echtzeit-Benachrichtigungen
-- [x] Integration von Feier- und Urlaubstagen
-- [x] Automatische Backups der Datenbank
-- [x] Systemprotokollierung für Auditierung und Sicherheit
 
 ### 💾 Technische Verbesserungen
 - [✅] Migration von BYTEA zu UUID für alle Primär- und Fremdschlüssel
@@ -168,6 +167,7 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 | DELETE  | `/api/time-entries/<id>`     | Zeiteintrag löschen                           |
 | GET     | `/api/reports/weekly/<week>` | Wochenbericht als PDF generieren              |
 | GET     | `/api/logs`                  | Systemprotokolle abrufen (nur Admin)          |
+| GET     | `/api/dashboard/summary`     | Dashboard-Kennzahlen und Visualisierungsdaten |
 
 ---
 
@@ -186,7 +186,6 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
     ```
 
 2.  **Datenbank initialisieren und Dienste starten:**
-    Stellen Sie sicher, dass Sie sich im Hauptverzeichnis des geklonten Projekts befinden (dort, wo `docker-compose.yml` liegt).
     ```bash
     docker-compose up --build -d
     ```
