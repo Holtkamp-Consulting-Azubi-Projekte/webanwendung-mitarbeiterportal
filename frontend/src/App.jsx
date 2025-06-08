@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Projekte from "./pages/Projekte";
 import Profil from "./pages/Profil";
 import Einstellungen from "./pages/Einstellungen";
+import Zeitmatrix from "./pages/Zeitmatrix"; // Zeitmatrix importieren
 
 // PrivateRoute Komponente zum Schutz von Routen
 const PrivateRoute = ({ children }) => {
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/projekte" element={<Projekte />} />
               <Route path="/profil" element={<Profil />} />
               <Route path="/einstellungen" element={<Einstellungen />} />
+              <Route path="/zeitmatrix" element={<Zeitmatrix />} /> {/* Hier die Zeitmatrix-Route hinzufügen */}
             </Routes>
           </Layout>
         </PrivateRoute>
