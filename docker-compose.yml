@@ -70,6 +70,18 @@ services:
       retries: 5
     restart: always
 
+  db-init:
+    image: postgres:15
+    depends_on:
+      - db
+    volumes:
+      - ./backend/init_update_data_vault.sql:/init_update_data_vault.sql:ro
+    entrypoint: ["bash", "-c", "sleep 10 && psql -h db -U admin -d mitarbeiterportal -f /init_update_data_vault.sql"]
+    environment:
+      - PGPASSWORD=secret
+    networks:
+      - mitarbeiterportal-network
+
 networks:
   mitarbeiterportal-network:
     driver: bridge
