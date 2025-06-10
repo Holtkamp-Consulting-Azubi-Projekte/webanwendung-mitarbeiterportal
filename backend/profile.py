@@ -10,7 +10,6 @@ profile_bp = Blueprint("profile", __name__)
 @profile_bp.route("/api/profile", methods=["GET", "PUT", "OPTIONS"])
 @jwt_required()
 def profile():
-    print("⭐️ PROFIL-ROUTE AUFGERUFEN")
     if request.method == "OPTIONS":
         return jsonify({}), 200
         
@@ -21,32 +20,60 @@ def profile():
     try:
         if request.method == "GET":
             print("⭐️ GET-Methode aufgerufen")
-            user = db.get_user_by_email(current_user_email)
             
-            if user:
-                # Direkte Datenbankabfrage zum aktuellen Projekt des Benutzers
-                current_project = db.fetch_one("""
-                    SELECT encode(hk_project, 'hex')
-                    FROM s_user_current_project 
-                    WHERE hk_user = %s AND t_to IS NULL 
-                    ORDER BY t_from DESC LIMIT 1
-                """, (user[0],))
+            # WICHTIG: Abfrage anpassen, um is_admin zu holen
+            user = db.fetch_one("""
+                SELECT 
+                    h.hk_user, 
+                    h.user_id, 
+                    s.first_name, 
+                    s.last_name, 
+                    s.position, 
+                    s.telefon, 
+                    s.core_hours_start,
+                    s.core_hours_end,
+                    s.is_admin  -- Wichtig: is_admin muss mit abgefragt werden
+                FROM 
+                    h_user h
+                JOIN 
+                    s_user_details s ON h.hk_user = s.hk_user
+                WHERE 
+                    h.user_id = %s AND s.t_to IS NULL
+            """, (current_user_email,))
+            
+            if not user:
+                return jsonify({"error": "Benutzer nicht gefunden"}), 404
+            
+            # DEBUG-Ausgabe
+            print(f"⭐️ Abfrageergebnis: {user}")
+            print(f"⭐️ is_admin Wert: {user[8]}")
                 
-                current_project_hex = current_project[0] if current_project else None
-                print(f"⭐️ Aktuelles Projekt direkt aus DB: {current_project_hex}")
-                
-                user_data = {
-                    'firstName': user[2],
-                    'lastName': user[3],
-                    'email': user[1],
-                    'position': user[4],
-                    'coreHours': user[5],
-                    'telefon': user[6],
-                    'currentProject': current_project_hex  # Verwende das direkt abgefragte Projekt
-                }
-                print(f"⭐️ Zurückgegebene Profildaten: {user_data}")
-                return jsonify(user_data), 200
-            return jsonify({"error": "Benutzer nicht gefunden"}), 404
+            # Aktuelles Projekt abrufen
+            current_project = db.fetch_one("""
+                SELECT p.project_name, p.hk_project
+                FROM s_user_current_project ucp 
+                JOIN h_project p ON ucp.hk_project = p.hk_project
+                WHERE ucp.hk_user = %s AND ucp.t_to IS NULL 
+                ORDER BY ucp.t_from DESC LIMIT 1
+            """, (user[0],))
+            
+            # Nutzerdaten für die Antwort zusammenstellen
+            response_data = {
+                "hk_user": str(user[0]),
+                "email": user[1],
+                "firstName": user[2],
+                "lastName": user[3],
+                "position": user[4],
+                "telefon": user[5],
+                "coreHoursStart": user[6].strftime("%H:%M") if user[6] else None,
+                "coreHoursEnd": user[7].strftime("%H:%M") if user[7] else None,
+                "isAdmin": bool(user[8]),  # Wichtig: is_admin als Boolean zurückgeben
+                "currentProject": current_project[0] if current_project else None,
+                "currentProjectId": str(current_project[1]) if current_project else None
+            }
+            
+            print(f"⭐️ Antwortdaten: {response_data}")
+            return jsonify(response_data)
             
         elif request.method == "PUT":
             print("⭐️ PUT-Methode aufgerufen")
@@ -110,10 +137,11 @@ def profile():
             return jsonify({"message": "Profil erfolgreich aktualisiert"}), 200
             
     except Exception as e:
-        print(f"⚠️ Fehler bei Profil-Route: {e}")
         import traceback
-        traceback.print_exc()
+        print(f"⭐️ Fehler: {e}")
+        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
+        
     finally:
         db.close()
 

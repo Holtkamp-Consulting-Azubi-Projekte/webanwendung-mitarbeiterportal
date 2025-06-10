@@ -12,6 +12,7 @@ from project import project_bp
 from customer import customer_bp
 from time_matrix import time_matrix_bp
 from dashboard import dashboard_bp
+from admin import admin_bp  # <-- Füge diese Zeile hinzu
 
 app = Flask(__name__, static_folder="static")
 
@@ -35,6 +36,7 @@ app.register_blueprint(project_bp)
 app.register_blueprint(customer_bp)
 app.register_blueprint(time_matrix_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(admin_bp)  # <-- Füge diese Zeile hinzu
 
 @app.route('/')
 def home():
