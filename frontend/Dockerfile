@@ -1,5 +1,5 @@
 # Nutze ein offizielles Node.js Image als Basis
-FROM node:18
+FROM node:20
 
 # Setze das Arbeitsverzeichnis im Container
 WORKDIR /app
@@ -16,4 +16,4 @@ COPY . .
 
 # Starte den Vite Entwicklungsserver
 # --host 0.0.0.0 stellt sicher, dass der Server von außerhalb des Containers erreichbar ist
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"] 
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

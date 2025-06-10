@@ -6,8 +6,9 @@ import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import Projekte from "./pages/Projekte";
 import Profil from "./pages/Profil";
-import Zeitmatrix from "./pages/Zeitmatrix";
 import Einstellungen from "./pages/Einstellungen";
+import Zeitmatrix from "./pages/Zeitmatrix"; // Zeitmatrix importieren
+import Admin from "./pages/Admin"; // Importiere den Admin-Bereich
 
 // PrivateRoute Komponente zum Schutz von Routen
 const PrivateRoute = ({ children }) => {
@@ -47,9 +48,10 @@ export default function App() {
               {/* Untergeordnete Routen unter /app */} {/* Diese Route /app/ sollte auch das Dashboard anzeigen */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/projekte" element={<Projekte />} />
-              <Route path="/zeitmatrix" element={<Zeitmatrix />} />
               <Route path="/profil" element={<Profil />} />
               <Route path="/einstellungen" element={<Einstellungen />} />
+              <Route path="/zeitmatrix" element={<Zeitmatrix />} /> {/* Hier die Zeitmatrix-Route hinzufügen */}
+              <Route path="/admin" element={<Admin />} /> {/* Diese Zeile hinzufügen */}
             </Routes>
           </Layout>
         </PrivateRoute>

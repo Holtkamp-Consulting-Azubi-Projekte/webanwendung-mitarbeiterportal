@@ -2,7 +2,7 @@
 
 ## 🔥 Kurzbeschreibung
 
-Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projektverwaltung und einem wöchentlichen PDF-Export. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und nutzt eine **PostgreSQL-Datenbank**.
+Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benutzerregistrierung & Login, Zeiterfassung, Projekt- und Kundenverwaltung sowie einem Dashboard mit Visualisierungen. Sie ist für den Einsatz in einem produktiven Teamumfeld konzipiert und nutzt eine **PostgreSQL-Datenbank**.
 
 ---
 
@@ -20,6 +20,7 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 - Tailwind CSS
 - JSX-Komponentenstruktur
 - Routing via `react-router-dom`
+- Chart.js & react-chartjs-2 für Visualisierungen
 
 ---
 
@@ -31,8 +32,9 @@ webanwendung-mitarbeiterportal/
 │   ├── app.py
 │   ├── auth.py
 │   ├── time_matrix.py
+│   ├── dashboard.py
 │   ├── requirements.txt
-│   └── init_data_vault.sql # Nach backend/ verschoben
+│   └── init_data_vault.sql
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable, auth/
@@ -43,72 +45,141 @@ webanwendung-mitarbeiterportal/
 ├── dokumentation/
 ├── .gitignore
 ├── README.md
+├── docker-compose.yml
 ```
+
+---
+
+## 🗄️ Datenbankstruktur
+
+Das Mitarbeiterportal verwendet eine PostgreSQL-Datenbank nach dem Data Vault 2.0 Modellierungsansatz mit folgender Struktur:
+
+### Haupttabellen
+- **h_user** - Hub für Benutzerreferenzen (UUID als Primary Key)
+- **h_project** - Hub für Projektreferenzen (UUID)
+- **h_customer** - Hub für Kundenreferenzen (UUID)
+- **s_user_details** - Benutzerdaten (Name, Position, Kontaktinformationen, Kernarbeitszeiten)
+- **s_user_login** - Login-Informationen (Hashes für Passwortsicherheit)
+- **s_project_details** - Projektinformationen (Name, Beschreibung, Start/End-Daten, Budget)
+- **s_customer_details** - Kundeninformationen (Kontaktperson, Adresse)
+- **s_timeentry_details** - Zeiterfassungsdaten (Datum, Start/End-Zeiten, Beschreibung)
+- **s_user_current_project** - Verknüpfung zwischen Nutzern und ihren aktuell zugewiesenen Projekten
+- **l_user_project_timeentry** - Verknüpfungstabelle zwischen Benutzer, Projekt und Zeiteinträgen
+- **app_logs** - Systemprotokolle für Sicherheit und Nachverfolgung
+
+Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Skalierbarkeit und Flexibilität.
 
 ---
 
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
-- [x] Registrierung mit Passwort-Hashing (Datenbank)
-- [x] Login mit JWT (JSON Web Token) (Datenbank)
-- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
+- [✅] Registrierung mit Passwort-Hashing
+- [✅] Login mit JWT (JSON Web Token)
+- [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt)
 - [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
-- [x] Geschützte Routen mit PrivateRoute-Komponente
-- [x] AuthModal für Login/Registrierung auf der LandingPage
-- [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
-- [x] Validierung grundlegender Benutzerdaten (Passwortlänge)
+- [✅] Geschützte Routen mit PrivateRoute-Komponente
+- [✅] AuthModal für Login/Registrierung auf der LandingPage
+- [✅] Verbesserte Fehlerbehandlung bei Login/Registrierung
+- [✅] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [x] Anzeige der Zeitmatrix-Tabelle
-- [ ] Zeitstempeln (Start/Ende) (Datenbank)
-- [ ] Tages- & Wochenansicht (Datenbank) - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] PDF-Export der Wochenübersicht
-- [ ] Automatischer Versand (geplant)
-- [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Spaltenreihenfolge angepasst
-- [ ] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] Filterzeile farblich hervorgehoben - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
-- [x] Integration der Zeitmatrix in das Hauptlayout
-- [ ] Kernarbeitszeit-Integration in Zeiteinträge - **Anzeige im Profil**
-- [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit - **Hinweis im TimeEntryModal**
+- [✅] Anzeige der Zeitmatrix-Tabelle
+- [x] Tages- & Wochenansicht
+- [x] PDF-Export der Wochenübersicht
+- [✅] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage
+- [✅] Gesamtarbeitszeit über der Tabelle platziert
+- [x] Filterzeile farblich hervorgehoben
+- [x] Monats-/Jahresauswahl (Dropdown für 2025)
+- [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [✅] Integration der Zeitmatrix in das Hauptlayout
+- [✅] Kernarbeitszeit-Integration in Zeiteinträge
+- [x] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
+- [✅] Arbeitsorte für Zeiteinträge (Home-Office, Büro, etc.)
 
 ### 👤 Profil
-- [x] Anzeige und Bearbeitung von Profildaten (Datenbank)
-- [x] Kernarbeitszeit-Einstellung mit grundlegender Validierung
-- [x] Standardprojekt-Auswahl (Datenbank)
-- [x] Passwortänderung (Datenbank)
-- [x] Telefonnummer und Position (Datenbank)
+- [✅] Anzeige und Bearbeitung von Profildaten
+- [✅] Kernarbeitszeit-Einstellung mit grundlegender Validierung
+- [✅] Standardprojekt-Auswahl
+- [✅] Passwortänderung
+- [✅] Telefonnummer und Position
+- [✅] Adminrechte werden im Profil angezeigt
+
+### 🛡️ Administrationsbereich
+- [✅] Benutzerverwaltung für Admins (Benutzer anlegen, bearbeiten, löschen)
+- [✅] Vergabe und Entzug von Adminrechten im Adminbereich
+- [✅] Nur Admins sehen und nutzen den Administrationsbereich (Header-Link & API-Absicherung)
+- [✅] Live-Prüfung der Adminrechte im Backend (keine Rechte im JWT-Token gespeichert)
+- [✅] Übersicht aller Benutzer mit Adminstatus, Position, Kernarbeitszeit etc.
+- [✅] Fehlerbehandlung und Logging bei unberechtigtem Zugriff
 
 ### 📁 Projektverwaltung
-- [x] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
-- [ ] Projekte anlegen, bearbeiten, löschen
-- [x] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
-- [x] Standardprojekt im Profil (Datenbank)
+- [✅] Projekte abrufen und anzeigen
+- [✅] Projekte anlegen, bearbeiten, löschen
+- [✅] Projektbezogene Zeiterfassung
+- [✅] Standardprojekt im Profil
+- [✅] Kundenzuordnung zu Projekten
+
+### 👥 Kundenverwaltung
+- [✅] Kunden anlegen, bearbeiten und löschen
+- [✅] Zuordnung von Projekten zu Kunden
+- [✅] Kundendetails (Adresse, Kontaktperson)
+- [✅] Historisierung statt physisches Löschen (Data Vault-Prinzip)
+
+### 📊 Dashboard
+- [✅] Übersicht der wichtigsten Kennzahlen (Arbeitstage, Gesamtstunden, Top-Projekt)
+- [✅] Balkendiagramm: Stunden pro Tag (Woche)
+- [✅] Kreisdiagramm: Projektverteilung
+- [✅] Kreisdiagramm: Arbeitsorte (letzte 30 Tage)
+- [x] Filter nach Zeitraum, Mitarbeiter, Projekt (geplant)
+- [x] Vergleich Soll-/Ist-Stunden, Über-/Unterstunden pro Mitarbeiter (geplant)
+- [x] Erweiterte Tabellen und Visualisierungen (geplant)
 
 ### ⚙️ Einstellungen
-- [x] Einstellungsseite (Platzhalter)
+- [✅] Einstellungsseite
+- [x] Benutzerspezifische Anzeigeoptionen
+- [x] Benachrichtigungseinstellungen
+- [x] Sprache und Region
+- [x] Export-Einstellungen für PDF-Berichte
+
+### 💾 Technische Verbesserungen
+- [✅] Migration von BYTEA zu UUID für alle Primär- und Fremdschlüssel
+- [✅] Optimierte Datenbankabfragen mit TEXT-Typkonvertierungen
+- [✅] Data Vault 2.0 Konformität mit korrekter Historisierung
+- [✅] Fehlerbehandlung für leere Strings bei numerischen Feldern
+- [✅] Entfernung von Debug-Ausgaben in der Entwicklungsumgebung
 
 ---
 
 ## 🧪 API-Endpunkte (Auswahl)
 
-| Methode | Endpoint               | Beschreibung                                  |
-|---------|------------------------|-----------------------------------------------|
-| POST    | `/api/login`           | Login mit E-Mail/Passwort, gibt JWT zurück (DB) |
-| POST    | `/api/register`        | Neue Registrierung (DB)                       |
-| GET     | `/api/ping`            | Einfacher Health-Check                        |
-| GET     | `/api/status`          | Systemstatus für Healthcheck                  |
-| GET     | `/api/projects`        | Alle Projekte abrufen (DB)                   |
-| GET     | `/api/profile`         | Profildaten abrufen (DB)                     |
-| PUT     | `/api/profile`         | Profildaten aktualisieren (DB)                |
-| PUT     | `/api/change-password` | Passwort ändern (DB)                         |
-| GET     | `/api/time-entries`     | Zeiteinträge abrufen (DB)                     |
-| POST    | `/api/time-entries`     | Neuen Zeiteintrag erstellen (DB)              |
-| PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren (DB)                |
-| DELETE  | `/api/time-entries/<id>`   | Zeiteintrag löschen (DB)                     |
+| Methode | Endpoint                     | Beschreibung                                  |
+|---------|------------------------------|-----------------------------------------------|
+| POST    | `/api/login`                 | Login mit E-Mail/Passwort, gibt JWT zurück    |
+| POST    | `/api/register`              | Neue Registrierung                            |
+| GET     | `/api/ping`                  | Einfacher Health-Check                        |
+| GET     | `/api/status`                | Systemstatus für Healthcheck                  |
+| GET     | `/api/projects`              | Alle Projekte abrufen                         |
+| POST    | `/api/projects`              | Neues Projekt erstellen                       |
+| PUT     | `/api/projects/<hk_project>` | Projektdaten aktualisieren                    |
+| DELETE  | `/api/projects/<hk_project>` | Projekt löschen                               |
+| GET     | `/api/customers`             | Alle Kunden abrufen                           |
+| POST    | `/api/customers`             | Neuen Kunden erstellen                        |
+| PUT     | `/api/customers/<hk_customer>` | Kundendaten aktualisieren                   |
+| DELETE  | `/api/customers/<hk_customer>` | Kunde löschen                               |
+| GET     | `/api/profile`               | Profildaten abrufen                           |
+| PUT     | `/api/profile`               | Profildaten aktualisieren                     |
+| PUT     | `/api/change-password`       | Passwort ändern                               |
+| GET     | `/api/time-entries`          | Zeiteinträge abrufen                          |
+| POST    | `/api/time-entries`          | Neuen Zeiteintrag erstellen                   |
+| PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren                     |
+| DELETE  | `/api/time-entries/<id>`     | Zeiteintrag löschen                           |
+| GET     | `/api/logs`                  | Systemprotokolle abrufen (nur Admin)          |
+| GET     | `/api/dashboard/summary`     | Dashboard-Kennzahlen und Visualisierungsdaten |
+| GET     | `/api/admin/users`           | Alle Benutzer anzeigen (nur Admin)            |
+| POST    | `/api/admin/users`           | Benutzer anlegen (nur Admin)                  |
+| PUT     | `/api/admin/users/<user_id>` | Benutzer bearbeiten (nur Admin)               |
+| DELETE  | `/api/admin/users/<user_id>` | Benutzer löschen (nur Admin)                  |
 
 ---
 
@@ -127,7 +198,6 @@ webanwendung-mitarbeiterportal/
     ```
 
 2.  **Datenbank initialisieren und Dienste starten:**
-    Stellen Sie sicher, dass Sie sich im Hauptverzeichnis des geklonten Projekts befinden (dort, wo `docker-compose.yml` liegt).
     ```bash
     docker-compose up --build -d
     ```
@@ -173,5 +243,3 @@ Richten Sie eine lokale PostgreSQL-Instanz ein oder stellen Sie sicher, dass das
 
 ## ⚖️ Lizenz
 MIT-Lizenz
-
-dummy

@@ -39,14 +39,19 @@ export default function Profile() {
 
   const navigate = useNavigate();
 
+  // Verbesserte initiale Datenladelogik
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) {
       navigate('/login');
       return;
     }
-    fetchUserData();
-    fetchProjects(); // Projektliste beim Laden der Komponente abrufen
+    
+    // Asynchrone selbstaufrufende Funktion zum Laden aller Daten
+    (async () => {
+      await fetchUserData();
+      await fetchProjects();
+    })();
   }, [navigate]);
 
   // Effekt zum automatischen Ausblenden der Erfolgsmeldung für Profil-Updates
@@ -70,9 +75,10 @@ export default function Profile() {
   }, [passwordSuccess]);
 
   useEffect(() => {
-    // Wenn Profildaten geladen werden, coreHours aufsplitten
+    // Wenn Profildaten geladen werden oder der Bearbeitungsmodus aktiviert wird,
+    // stellen wir sicher, dass coreHours korrekt aufgespalten ist
     if (userData.coreHours && (!userData.coreHoursStart || !userData.coreHoursEnd)) {
-      const [start, end] = userData.coreHours.split('-');
+      const [start, end] = userData.coreHours.split('-').map(time => time.trim());
       setUserData(prev => ({
         ...prev,
         coreHoursStart: start || '',
@@ -80,7 +86,7 @@ export default function Profile() {
       }));
     }
     // eslint-disable-next-line
-  }, [userData.coreHours]);
+  }, [userData.coreHours, isEditing]);
 
   useEffect(() => {
     // Validierung bei Änderung der Zeitfelder
@@ -93,32 +99,71 @@ export default function Profile() {
     // eslint-disable-next-line
   }, [userData.coreHoursStart, userData.coreHoursEnd]);
 
-  const fetchUserData = async () => {
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const response = await axios.get('/api/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true
-      });
-      setUserData(response.data);
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        navigate('/login');
-      } else {
-        setError('Fehler beim Laden der Benutzerdaten');
-        console.error('Fehler beim Laden der Benutzerdaten:', err);
-      }
+  // Verbesserte fetchUserData-Funktion
+const fetchUserData = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setError('Sie sind nicht angemeldet');
+      navigate('/login');
+      return;
     }
-  };
+
+    const response = await axios.get('/api/profile', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      withCredentials: true
+    });
+    
+    // Debug-Ausgabe
+    console.log('Vom Server geladene Profildaten:', response.data);
+    
+    const data = response.data;
+    
+    // 1. Prüfe, ob im localStorage ein Projekt gespeichert ist
+    const savedProject = localStorage.getItem('currentProject');
+    console.log('Aus localStorage geladenes Projekt:', savedProject);
+    
+    // 2. Wenn vom Server kein Projekt kommt, verwende das aus dem localStorage
+    if (!data.currentProject && savedProject) {
+      console.log('Verwende gespeichertes Projekt aus localStorage:', savedProject);
+      data.currentProject = savedProject;
+    } 
+    // 3. Wenn vom Server ein Projekt kommt, aktualisiere localStorage
+    else if (data.currentProject) {
+      console.log('Aktualisiere localStorage mit Projekt vom Server:', data.currentProject);
+      localStorage.setItem('currentProject', data.currentProject);
+    }
+    
+    if (data.coreHours && data.coreHours.includes('-')) {
+      const [start, end] = data.coreHours.split('-').map(time => time.trim());
+      data.coreHoursStart = start;
+      data.coreHoursEnd = end;
+    }
+    
+    setUserData(data);
+    
+    // Wenn ein Projekt gesetzt ist, stellen wir sicher, dass die Projektliste geladen ist
+    if (data.currentProject && projects.length === 0) {
+      await fetchProjects();
+    }
+    
+    return data; // Daten zurückgeben für weitere Verarbeitung
+  } catch (err) {
+    console.error('Fehler beim Laden der Profildaten:', err);
+    
+    if (err.response?.status === 401) {
+      setError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+      navigate('/login');
+    } else if (err.response?.status === 404) {
+      setError('Benutzerprofil nicht gefunden. Bitte kontaktieren Sie den Administrator.');
+    } else {
+      setError('Fehler beim Laden der Profildaten. Bitte versuchen Sie es später erneut.');
+    }
+  }
+};
 
   // Neue Funktion zum Abrufen der Projektliste
   const fetchProjects = async () => {
@@ -142,8 +187,64 @@ export default function Profile() {
     }
 };
 
+// Verbesserte toggleEditMode-Funktion
+const toggleEditMode = () => {
+  if (!isEditing) {
+    // Beim Wechsel in den Bearbeitungsmodus:
+    // Sicherstellen, dass die Kernarbeitszeit korrekt aufgeteilt ist
+    if (userData.coreHours && (!userData.coreHoursStart || !userData.coreHoursEnd)) {
+      const [start, end] = userData.coreHours.split('-').map(time => time.trim());
+      setUserData(prev => ({
+        ...prev,
+        coreHoursStart: start || '',
+        coreHoursEnd: end || '',
+      }));
+    }
+    
+    // Sicherstellen, dass Projekte geladen sind, falls ein aktuelles Projekt gesetzt ist
+    if (userData.currentProject && projects.length === 0) {
+      fetchProjects();
+    }
+  } else {
+    // Beim Verlassen des Bearbeitungsmodus
+    // Kopie der aktuellen Daten speichern, damit das UI nicht flackert
+    const originalData = { ...userData };
+    
+    // Daten vom Server neu laden
+    fetchUserData().then(() => {
+      // Wenn das Laden fehlschlägt oder die Projektreferenz verloren geht,
+      // stellen wir sicher, dass das aktuelle Projekt erhalten bleibt
+      if (originalData.currentProject) {
+        setUserData(prev => {
+          if (!prev.currentProject) {
+            return { ...prev, currentProject: originalData.currentProject };
+          }
+          return prev;
+        });
+      }
+    });
+    
+    // Projekte neu laden
+    if (userData.currentProject) {
+      fetchProjects();
+    }
+  }
+  
+  setIsEditing(!isEditing);
+};
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name === 'currentProject') {
+      // Wenn sich das Projekt ändert, aktualisiere auch localStorage sofort
+      if (value) {
+        localStorage.setItem('currentProject', value);
+      } else {
+        localStorage.removeItem('currentProject');
+      }
+    }
+    
     if (name === 'coreHoursStart' || name === 'coreHoursEnd') {
       const start = name === 'coreHoursStart' ? value : userData.coreHoursStart;
       const end = name === 'coreHoursEnd' ? value : userData.coreHoursEnd;
@@ -200,55 +301,92 @@ export default function Profile() {
     return true;
   };
 
+  // Neue Validierungsfunktion für Telefonnummern
+  const validatePhoneNumber = (phone) => {
+    // Einfache deutsche Telefonnummern-Validierung
+    // Akzeptiert Formate wie: +49 123 456789, 0123 456789, +49123456789, etc.
+    const regex = /^(\+[0-9]{2}|0)[0-9\s-]{7,}$/;
+    return regex.test(phone);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    // Kernarbeitszeit-Validierung vor dem Speichern
-    if (!validateCoreHours(userData.coreHoursStart, userData.coreHoursEnd)) {
-      setError('Bitte korrigiere die Kernarbeitszeit.');
-      return;
-    }
-    try {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        navigate('/login');
-        return;
+
+    // Kernarbeitszeit validieren
+    if (userData.coreHoursStart && userData.coreHoursEnd) {
+      const isValid = validateCoreHours(userData.coreHoursStart, userData.coreHoursEnd);
+      if (coreHoursError) {
+        return; // Formular nicht absenden, wenn Fehler vorliegen
       }
+    }
 
-      // Kombiniere coreHoursStart und coreHoursEnd zu coreHours, falls vorhanden
-      const updatedCoreHours = (userData.coreHoursStart && userData.coreHoursEnd) 
-        ? `${userData.coreHoursStart}-${userData.coreHoursEnd}` 
-        : '';
+    // Wenn Kernarbeitszeit vorhanden, formatiere sie für die API
+    const formattedUserData = { ...userData };
+    if (userData.coreHoursStart && userData.coreHoursEnd) {
+      formattedUserData.coreHours = `${userData.coreHoursStart} - ${userData.coreHoursEnd}`;
+    }
 
-      // Backend erwartet diese Feldnamen
-      const userDataToUpdate = {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        position: userData.position,
-        coreHours: updatedCoreHours,
-        telefon: userData.telefon,
-        currentProject: userData.currentProject // Auch currentProject kann hier geupdated werden
-      };
+    // Das aktuelle Projekt explizit setzen
+    const dataToSend = {
+      ...formattedUserData,
+      currentProject: formattedUserData.currentProject // Wichtig: Senden als currentProject
+    };
+    
+    console.log('Sende Profildaten:', dataToSend);
 
-      await axios.put('/api/profile', userDataToUpdate, {
+    try {
+      const response = await axios.put('/api/profile', dataToSend, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json'
         },
         withCredentials: true
       });
-      setSuccess('Profil erfolgreich aktualisiert!');
-      setIsEditing(false); // Bearbeitungsmodus verlassen nach erfolgreichem Speichern
-      // Fetch user data again to update the displayed information
-      fetchUserData();
-    } catch (err) {
-      if (err.response?.status === 401) {
-        localStorage.removeItem('access_token');
-        navigate('/login');
+
+      // WICHTIG: Speichere das Projekt im localStorage
+      if (dataToSend.currentProject) {
+        console.log('Speichere Projekt in localStorage:', dataToSend.currentProject);
+        localStorage.setItem('currentProject', dataToSend.currentProject);
       } else {
-        setError('Fehler beim Aktualisieren des Profils.');
-        console.error('Fehler beim Aktualisieren des Profils:', err.response?.data || err);
+        console.log('Entferne Projekt aus localStorage');
+        localStorage.removeItem('currentProject');
+      }
+
+      // Erfolgsmeldung anzeigen
+      setSuccess('Profil erfolgreich aktualisiert');
+      
+      // Bearbeitungsmodus beenden
+      setIsEditing(false);
+      
+      // WICHTIG: Speichere das aktuelle Projekt für den Vergleich
+      const savedProject = dataToSend.currentProject;
+      
+      // Daten neu laden, um sicherzustellen, dass alles korrekt ist
+      const updatedData = await fetchUserData();
+      
+      // WICHTIG NEU: Wenn das Projekt beim Neuladen nicht vorhanden ist, setze es manuell zurück
+      if (savedProject && (!updatedData || !updatedData.currentProject)) {
+        console.log('Projekt nach Neuladen nicht gefunden, setze zurück:', savedProject);
+        setUserData(prev => ({
+          ...prev,
+          currentProject: savedProject
+        }));
+      }
+      
+      // Erfolgsmeldung nach einiger Zeit ausblenden
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Fehler beim Aktualisieren des Profils:', err);
+      
+      if (err.response?.status === 401) {
+        setError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+        navigate('/login');
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
       }
     }
   };
@@ -260,26 +398,27 @@ export default function Profile() {
     setPasswordSuccess('');
 
     if (newPassword !== confirmNewPassword) {
-      setPasswordError('Neue Passwörter stimmen nicht überein.');
+      setPasswordError('Die Passwörter stimmen nicht überein');
       return;
     }
 
     if (!currentPassword || !newPassword) {
-        setPasswordError('Aktuelles und neues Passwort müssen angegeben werden.');
-        return;
+      setPasswordError('Bitte füllen Sie alle Felder aus');
+      return;
     }
 
     if (newPassword.length < 8) {
-        setPasswordError('Neues Passwort muss mindestens 8 Zeichen lang sein.');
-        return;
+      setPasswordError('Das neue Passwort muss mindestens 8 Zeichen lang sein');
+      return;
     }
 
     const token = localStorage.getItem('access_token');
 
     try {
-      await axios.put('/api/change-password', {
-        currentPassword: currentPassword,
-        newPassword: newPassword
+      const response = await axios.post('/api/change-password', {
+        currentPassword,
+        newPassword,
+        confirmPassword: confirmNewPassword
       }, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -287,20 +426,38 @@ export default function Profile() {
         },
         withCredentials: true
       });
-      setPasswordSuccess('Passwort erfolgreich geändert!');
+
+      setPasswordSuccess('Passwort erfolgreich geändert');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
-
     } catch (err) {
+      console.error('Fehler beim Ändern des Passworts:', err);
+      
       if (err.response?.status === 401) {
-          setPasswordError('Aktuelles Passwort ist falsch.');
+        setPasswordError('Das aktuelle Passwort ist falsch');
+      } else if (err.response?.data?.message) {
+        setPasswordError(err.response.data.message);
+      } else if (err.response?.status === 500) {
+        setPasswordError('Ein interner Serverfehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
       } else {
-          setPasswordError('Fehler beim Ändern des Passworts.');
-          console.error('Fehler beim Ändern des Passworts:', err.response?.data || err);
+        setPasswordError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
       }
     }
   };
+
+  // Debugging-Effekt für Projekt-Tracking
+  useEffect(() => {
+    console.log('Aktuelle Projektdaten:', {
+      'userData.currentProject': userData.currentProject,
+      'Projekt gefunden?': projects.length > 0 
+        ? !!projects.find(p => p.hk_project === userData.currentProject) 
+        : 'Projektliste leer',
+      'Projektname': projects.length > 0 && userData.currentProject
+        ? (projects.find(p => p.hk_project === userData.currentProject)?.project_name || 'Nicht gefunden')
+        : 'Kein Projekt ausgewählt'
+    });
+  }, [userData.currentProject, projects]);
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -308,7 +465,7 @@ export default function Profile() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-primary">👤 Mein Profil</h1>
           <button
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={toggleEditMode}
             className="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition-colors"
           >
             {isEditing ? 'Abbrechen' : 'Bearbeiten'}
@@ -379,8 +536,10 @@ export default function Profile() {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                 >
                   <option value="">Projekt auswählen</option>
-                  {projects.map((project, index) => (
-                    <option key={index} value={project}>{project}</option>
+                  {projects.map((project) => (
+                    <option key={project.hk_project} value={project.hk_project}>
+                      {project.project_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -458,7 +617,14 @@ export default function Profile() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Aktuelles Projekt</h3>
-              <p className="mt-1 text-lg">{userData.currentProject || '-'}</p>
+              <p className="mt-1 text-lg">
+                {userData.currentProject ? 
+                  (projects.length > 0 
+                    ? (projects.find(p => p.hk_project === userData.currentProject)?.project_name || userData.currentProject)
+                    : 'Projekt wird geladen...'
+                  )
+                  : '-'}
+              </p>
             </div>
             <div>
               <h3 className="text-sm font-medium text-gray-500">Kernarbeitszeit</h3>
@@ -537,4 +703,3 @@ export default function Profile() {
     </div>
   );
 }
-  
