@@ -143,37 +143,13 @@ class Database:
             raise
 
     def get_user_by_email(self, email):
-        """Sucht einen Benutzer anhand der E-Mail-Adresse."""
-        try:
-            print(f"Suche nach Benutzer mit E-Mail: {email}")
-            sql = """
-                SELECT 
-                    hu.hk_user::text,
-                    hu.user_id,
-                    sud.first_name,
-                    sud.last_name,
-                    sud.position,
-                    sud.core_hours,
-                    sud.telefon,
-                    sul.password_hash,
-                    (SELECT sucp.hk_project::text FROM s_user_current_project sucp 
-                     WHERE sucp.hk_user = hu.hk_user AND sucp.t_to IS NULL 
-                     ORDER BY sucp.t_from DESC LIMIT 1) as current_project
-                FROM h_user hu
-                LEFT JOIN s_user_details sud ON hu.hk_user = sud.hk_user
-                    AND sud.t_to IS NULL
-                LEFT JOIN s_user_login sul ON hu.hk_user = sul.hk_user
-                    AND sul.t_to IS NULL
-                WHERE hu.user_id = %s
-                LIMIT 1
-            """
-            result = self.fetch_one(sql, (email,))
-            print(f"Gefundener Benutzer: {result}")
-            return result
-        except Exception as e:
-            print(f"Fehler beim Abrufen des Benutzers: {e}")
-            traceback.print_exc()
-            return None
+        return self.fetch_one("""
+            SELECT h.hk_user, h.user_id, d.first_name, d.last_name, d.position, d.core_hours, d.telefon, l.password_hash, d.is_admin
+            FROM h_user h
+            LEFT JOIN s_user_details d ON h.hk_user = d.hk_user AND d.t_to IS NULL
+            LEFT JOIN s_user_login l ON h.hk_user = l.hk_user AND l.t_to IS NULL
+            WHERE h.user_id = %s AND h.t_to IS NULL
+        """, (email,))
 
     def update_user_details(self, hk_user, update_data):
         """Aktualisiert die Benutzerdetails."""

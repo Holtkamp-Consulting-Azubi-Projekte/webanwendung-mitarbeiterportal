@@ -36,10 +36,10 @@ def register():
         }), 400
     try:
         db = Database()
-        existing_user = db.get_user_by_email(data['email'])
+        existing_user = db.fetch_one(
+            "SELECT 1 FROM h_user WHERE user_id = %s AND t_to IS NULL", (data['email'],)
+        )
         if existing_user:
-            print("E-Mail bereits registriert")
-            log_event('registration_failed', details={'email': data['email'], 'reason': 'email_already_registered'})
             return jsonify({
                 'success': False,
                 'message': 'Diese E-Mail-Adresse ist bereits registriert'
@@ -164,7 +164,8 @@ def profile():
                     'coreHours': user[5],
                     'telefon': user[6],
                     'passwordHash': user[7],
-                    'currentProject': user[8]
+                    'isAdmin': user[8],  # <-- Stelle sicher, dass das Feld mitkommt!
+                    'currentProject': None  # oder hole das aktuelle Projekt separat
                 }
                 return jsonify(user_data), 200
             return jsonify({"error": "Benutzer nicht gefunden"}), 404
