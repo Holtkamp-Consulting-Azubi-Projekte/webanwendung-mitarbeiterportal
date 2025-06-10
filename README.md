@@ -103,6 +103,15 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 - [✅] Standardprojekt-Auswahl
 - [✅] Passwortänderung
 - [✅] Telefonnummer und Position
+- [✅] Adminrechte werden im Profil angezeigt
+
+### 🛡️ Administrationsbereich
+- [✅] Benutzerverwaltung für Admins (Benutzer anlegen, bearbeiten, löschen)
+- [✅] Vergabe und Entzug von Adminrechten im Adminbereich
+- [✅] Nur Admins sehen und nutzen den Administrationsbereich (Header-Link & API-Absicherung)
+- [✅] Live-Prüfung der Adminrechte im Backend (keine Rechte im JWT-Token gespeichert)
+- [✅] Übersicht aller Benutzer mit Adminstatus, Position, Kernarbeitszeit etc.
+- [✅] Fehlerbehandlung und Logging bei unberechtigtem Zugriff
 
 ### 📁 Projektverwaltung
 - [✅] Projekte abrufen und anzeigen
@@ -165,9 +174,12 @@ Die Datenbank nutzt UUIDs für alle Primär- und Fremdschlüssel zur besseren Sk
 | POST    | `/api/time-entries`          | Neuen Zeiteintrag erstellen                   |
 | PUT     | `/api/time-entries/<id>`     | Zeiteintrag aktualisieren                     |
 | DELETE  | `/api/time-entries/<id>`     | Zeiteintrag löschen                           |
-| GET     | `/api/reports/weekly/<week>` | Wochenbericht als PDF generieren              |
 | GET     | `/api/logs`                  | Systemprotokolle abrufen (nur Admin)          |
 | GET     | `/api/dashboard/summary`     | Dashboard-Kennzahlen und Visualisierungsdaten |
+| GET     | `/api/admin/users`           | Alle Benutzer anzeigen (nur Admin)            |
+| POST    | `/api/admin/users`           | Benutzer anlegen (nur Admin)                  |
+| PUT     | `/api/admin/users/<user_id>` | Benutzer bearbeiten (nur Admin)               |
+| DELETE  | `/api/admin/users/<user_id>` | Benutzer löschen (nur Admin)                  |
 
 ---
 
