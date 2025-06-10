@@ -24,7 +24,9 @@ services:
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mitarbeiterportal-frontend
     volumes:
       - ./frontend:/app
