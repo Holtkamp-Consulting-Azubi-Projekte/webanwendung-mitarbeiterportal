@@ -80,6 +80,7 @@ CREATE TABLE s_user_details (
     position VARCHAR(255),
     core_hours VARCHAR(255), -- Format wie "8:00-17:00"
     telefon VARCHAR(255),
+    is_admin BOOLEAN DEFAULT FALSE, -- <--- Ergänzt!
 
     PRIMARY KEY (hk_user, t_from),
     FOREIGN KEY (hk_user) REFERENCES h_user(hk_user)
