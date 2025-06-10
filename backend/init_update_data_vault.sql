@@ -9,18 +9,8 @@
 -- CREATE TABLE backup_s_user_current_project AS SELECT * FROM s_user_current_project;
 -- CREATE TABLE backup_app_logs AS SELECT * FROM app_logs;
 
--- Löschen der bestehenden Tabellen (in korrekter Reihenfolge wegen Fremdschlüssel)
-DROP TABLE IF EXISTS s_timeentry_details CASCADE;
-DROP TABLE IF EXISTS s_user_current_project CASCADE;
-DROP TABLE IF EXISTS s_project_details CASCADE;
-DROP TABLE IF EXISTS s_customer_details CASCADE;
-DROP TABLE IF EXISTS s_user_login CASCADE;
-DROP TABLE IF EXISTS s_user_details CASCADE;
-DROP TABLE IF EXISTS l_user_project_timeentry CASCADE;
-DROP TABLE IF EXISTS h_project CASCADE;
-DROP TABLE IF EXISTS h_customer CASCADE;
-DROP TABLE IF EXISTS h_user CASCADE;
-DROP TABLE IF EXISTS app_logs CASCADE;
+-- KEINE DROP TABLES!
+-- Nur CREATE TABLE IF NOT EXISTS und ALTER TABLE IF NOT EXISTS
 
 -- Optional: Schema erstellen, falls benötigt
 -- CREATE SCHEMA data_vault;

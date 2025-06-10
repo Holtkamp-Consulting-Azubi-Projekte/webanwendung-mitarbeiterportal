@@ -15,7 +15,6 @@ class Database:
         self.conn = None
         self.cur = None
         self.connect()
-        self._ensure_tables_exist()
 
     def connect(self):
         """Stellt die Verbindung zur Datenbank her."""
@@ -31,37 +30,6 @@ class Database:
             print("Datenbankverbindung erfolgreich hergestellt")
         except Exception as e:
             print(f"Fehler beim Verbinden zur Datenbank: {e}")
-            raise
-
-    def _ensure_tables_exist(self):
-        """Stellt sicher, dass alle benötigten Tabellen existieren."""
-        try:
-            # Prüfe, ob h_user existiert, wenn nicht, führe das init-Skript aus
-            self.cur.execute("""
-                SELECT EXISTS (
-                    SELECT FROM information_schema.tables 
-                    WHERE table_schema = 'public' 
-                    AND table_name = 'h_user'
-                );
-            """)
-            tables_exist = self.cur.fetchone()[0]
-            
-            if not tables_exist:
-                print("Tabellen existieren nicht. Initialisiere Datenbankschema...")
-                # Pfad zur SQL-Datei
-                script_path = os.path.join(os.path.dirname(__file__), 'init_data_vault.sql')
-                
-                with open(script_path, 'r') as f:
-                    sql_script = f.read()
-                    self.cur.execute(sql_script)
-                    self.conn.commit()
-                    print("Datenbankschema erfolgreich initialisiert!")
-            else:
-                print("Datenbankschema bereits vorhanden.")
-        
-        except Exception as e:
-            print(f"Fehler bei der Datenbankinitialisierung: {e}")
-            self.conn.rollback()
             raise
 
     def close(self):
