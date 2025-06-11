@@ -31,13 +31,29 @@ Diese Webanwendung dient als internes Mitarbeiterportal mit Funktionen wie Benut
 Führe im Terminal projektbaum.sh aus -> ./projektbaum.sh
 Dadurch wird eine projektbaum.md erstellt
 
+# 📁 Projektbaum
+
 ├── .gitignore
 ├── backend/
 │   ├── app.py
 │   ├── auth.py
-│   ├── time_matrix.py
+│   ├── database.py
+│   ├── Dockerfile
+│   ├── init_data_vault.sql
+│   ├── log.py
+│   ├── models.py
+│   ├── psql_test.py
 │   ├── requirements.txt
-│   └── init_data_vault.sql # Nach backend/ verschoben
+│   ├── time_matrix.py
+│   ├── time_tracking.py
+│   └── utils.py
+├── docker-compose.yml
+├── dokumentation/
+│   └── Screenshots/
+│       ├── Backend.md
+│       ├── Frontend.md
+│       ├── Projektstruktur.md
+│       └── Setup-Anleitung.md
 ├── frontend/
 │   ├── .dockerignore
 │   ├── .env.development
@@ -48,61 +64,90 @@ Dadurch wird eine projektbaum.md erstellt
 │   ├── package.json
 │   ├── postcss.config.js
 │   ├── src/
-│   │   ├── components/   → Header, Footer, Buttons, TimeEntryModal, TimeMatrixTable, auth/
-│   │   ├── pages/        → LandingPage, Dashboard, Profil, Projekte, Zeitmatrix, Einstellungen
-│   │   └── styles/       → header.css, footer.css
-│   ├── public/
-│   └── package.json
-├── dokumentation/
-├── .gitignore
-├── README.md
-```
+│   │   ├── App.jsx
+│   │   ├── assets/
+│   │   │   └── logo.png
+│   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   │   ├── AuthModal.jsx
+│   │   │   │   ├── Login.jsx
+│   │   │   │   ├── LogoutConfirmationModal.jsx
+│   │   │   │   └── Register.jsx
+│   │   │   ├── Button.jsx
+│   │   │   ├── Footer.jsx
+│   │   │   ├── Header.jsx
+│   │   │   ├── Layout.jsx
+│   │   │   ├── TimeEntryModal.jsx
+│   │   │   ├── TimeMatrix.jsx
+│   │   │   └── TimeMatrixTable.jsx
+│   │   ├── index.css
+│   │   ├── main.jsx
+│   │   └── pages/
+│   │       ├── Dashboard.jsx
+│   │       ├── Einstellungen.jsx
+│   │       ├── Home.jsx
+│   │       ├── LandingPage.jsx
+│   │       ├── Profil.jsx
+│   │       ├── Projekte.jsx
+│   │       ├── Zeitmatrix
+│   │       └── Zeitmatrix.jsx
+│   ├── tailwind.config.js
+│   └── vite.config.js
+├── 2.jsx
+├── nginx/
+│   └── nginx.conf
+├── package-lock.json
+├── package.json
+├── projektbaum.md
+├── projektbaum.sh
+└── README.md
+
 
 ---
 
 ## ✅ Bisher implementierte Features
 
 ### 🔐 Benutzerverwaltung
-- [x] Registrierung mit Passwort-Hashing (Datenbank)
-- [x] Login mit JWT (JSON Web Token) (Datenbank)
-- [x] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
-- [x] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
-- [x] Geschützte Routen mit PrivateRoute-Komponente
-- [x] AuthModal für Login/Registrierung auf der LandingPage
-- [x] Verbesserte Fehlerbehandlung bei Login/Registrierung
-- [x] Validierung grundlegender Benutzerdaten (Passwortlänge)
+- [✅] Registrierung mit Passwort-Hashing (Datenbank)
+- [✅] Login mit JWT (JSON Web Token) (Datenbank)
+- [✅] Profildaten anzeigen & bearbeiten (Name, E-Mail, Position, Telefon, Kernarbeitszeit, Aktuelles Projekt) (Datenbank)
+- [ ] Protokollierung von Authentifizierungsereignissen (Login, Registrierung)
+- [✅] Geschützte Routen mit PrivateRoute-Komponente
+- [✅] AuthModal für Login/Registrierung auf der LandingPage
+- [✅] Verbesserte Fehlerbehandlung bei Login/Registrierung
+- [✅] Validierung grundlegender Benutzerdaten (Passwortlänge)
 
 ### 🕒 Zeiterfassung
-- [x] Anzeige der Zeitmatrix-Tabelle
-- [ ] Zeitstempeln (Start/Ende) (Datenbank)
+- [✅] Anzeige der Zeitmatrix-Tabelle
+- [✅] Zeitstempeln (Start/Ende) (Datenbank)
 - [ ] Tages- & Wochenansicht (Datenbank) - **Implementierung in Zeitmatrix-Tabelle**
 - [ ] PDF-Export der Wochenübersicht
 - [ ] Automatischer Versand (geplant)
 - [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Spaltenreihenfolge angepasst
-- [ ] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
+- [✅] Spaltenreihenfolge angepasst
+- [✅] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
 - [ ] Filterzeile farblich hervorgehoben - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
-- [x] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
-- [x] Integration der Zeitmatrix in das Hauptlayout
+- [ ] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
+- [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
+- [ ] Integration der Zeitmatrix in das Hauptlayout
 - [ ] Kernarbeitszeit-Integration in Zeiteinträge - **Anzeige im Profil**
 - [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit - **Hinweis im TimeEntryModal**
 
 ### 👤 Profil
-- [x] Anzeige und Bearbeitung von Profildaten (Datenbank)
-- [x] Kernarbeitszeit-Einstellung mit grundlegender Validierung
-- [x] Standardprojekt-Auswahl (Datenbank)
-- [x] Passwortänderung (Datenbank)
-- [x] Telefonnummer und Position (Datenbank)
+- [✅] Anzeige und Bearbeitung von Profildaten (Datenbank)
+- [✅] Kernarbeitszeit-Einstellung mit grundlegender Validierung
+- [✅] Standardprojekt-Auswahl (Datenbank)
+- [✅] Passwortänderung (Datenbank)
+- [✅] Telefonnummer und Position (Datenbank)
 
 ### 📁 Projektverwaltung
-- [x] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
-- [ ] Projekte anlegen, bearbeiten, löschen
-- [x] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
-- [x] Standardprojekt im Profil (Datenbank)
+- [✅] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
+- [✅] Projekte anlegen, bearbeiten, löschen
+- [✅] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
+- [✅] Standardprojekt im Profil (Datenbank)
 
 ### ⚙️ Einstellungen
-- [x] Einstellungsseite (Platzhalter)
+- [✅] Einstellungsseite (Platzhalter)
 
 ---
 
