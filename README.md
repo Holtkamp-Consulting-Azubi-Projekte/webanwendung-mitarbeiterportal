@@ -209,7 +209,7 @@ Dadurch wird eine projektbaum.md erstellt
 
 3. **Anwendung aufrufen:**
     - Das Frontend ist nach wenigen Minuten unter  
-      `http://localhost:3001`  
+      `http://localhost:3001`  ( ich weiß, ganz schön wild )
       (oder der IP deines Servers) erreichbar.
 
 4. **Datenbankstruktur und Updates:**
