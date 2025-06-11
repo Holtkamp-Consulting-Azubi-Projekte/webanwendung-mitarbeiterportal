@@ -12,13 +12,14 @@ services:
     depends_on:
       - db
     environment:
-    - FLASK_ENV=production
-    - FLASK_DEBUG=1
-    - DATABASE_URL=postgresql://admin:secret@db:5432/mitarbeiterportal
-    - DB_HOST=db
-    - DB_NAME=mitarbeiterportal
-    - DB_USER=admin
-    - DB_PASSWORD=secret
+      - FLASK_ENV=production
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://admin:secret@db:5432/HoltkampConsulting
+      - DB_HOST=db
+      - DB_NAME=HoltkampConsulting
+      - DB_USER=admin
+      - DB_PASSWORD=secret
+      - DB_SCHEMA=mitarbeiterportal
     networks:
       - mitarbeiterportal-network
     restart: always
@@ -30,7 +31,7 @@ services:
     container_name: mitarbeiterportal-frontend
     # Keine volumes: für Produktion!
     environment:
-      - REACT_APP_API_URL=http://localhost:3001/api
+      - REACT_APP_API_URL=http://localhost:8080/api
     networks:
       - mitarbeiterportal-network
     restart: always
@@ -39,7 +40,7 @@ services:
     image: nginx:latest
     container_name: mitarbeiterportal-nginx
     ports:
-      - "3001:80"
+      - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
@@ -58,13 +59,13 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: secret
-      POSTGRES_DB: mitarbeiterportal
+      POSTGRES_DB: HoltkampConsulting
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - mitarbeiterportal-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d mitarbeiterportal"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d HoltkampConsulting"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -76,7 +77,7 @@ services:
       - db
     volumes:
       - ./backend/init_update_data_vault.sql:/init_update_data_vault.sql:ro
-    entrypoint: ["bash", "-c", "sleep 10 && psql -h db -U admin -d mitarbeiterportal -f /init_update_data_vault.sql"]
+    entrypoint: ["bash", "-c", "sleep 10 && psql -h db -U admin -d HoltkampConsulting -f /init_update_data_vault.sql"]
     environment:
       - PGPASSWORD=secret
     networks:

@@ -12,9 +12,9 @@
 -- KEINE DROP TABLES!
 -- Nur CREATE TABLE IF NOT EXISTS und ALTER TABLE IF NOT EXISTS
 
--- Optional: Schema erstellen, falls benötigt
--- CREATE SCHEMA data_vault;
--- SET search_path TO data_vault;
+-- Optional: Schema erstellen, falls nicht vorhanden
+CREATE SCHEMA IF NOT EXISTS mitarbeiterportal;
+SET search_path TO mitarbeiterportal;
 
 -- Hub für Benutzer
 CREATE TABLE IF NOT EXISTS h_user (
@@ -74,7 +74,6 @@ CREATE TABLE IF NOT EXISTS s_user_details (
     FOREIGN KEY (hk_user) REFERENCES h_user(hk_user)
 );
 
--- Ergänze fehlende Spalte is_admin (falls sie fehlt)
 ALTER TABLE s_user_details ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 
 -- Satellite für Benutzer-Anmeldedaten (bitemporal)
