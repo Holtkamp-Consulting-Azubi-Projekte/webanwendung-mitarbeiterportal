@@ -120,18 +120,18 @@ Dadurch wird eine projektbaum.md erstellt
 ### 🕒 Zeiterfassung
 - [✅] Anzeige der Zeitmatrix-Tabelle
 - [✅] Zeitstempeln (Start/Ende) (Datenbank)
-- [ ] Tages- & Wochenansicht (Datenbank) - **Implementierung in Zeitmatrix-Tabelle**
+- [ ] Tages- & Wochenansicht (Datenbank)
 - [ ] PDF-Export der Wochenübersicht
 - [ ] Automatischer Versand (geplant)
-- [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter) - **Implementierung in Zeitmatrix-Tabelle**
+- [ ] Verbesserte Datumsfilterung: Anzeige nur gefilterter Tage (ohne leere Tage bei Filter)
 - [✅] Spaltenreihenfolge angepasst
-- [✅] Gesamtarbeitszeit über der Tabelle platziert - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] Filterzeile farblich hervorgehoben - **Implementierung in Zeitmatrix-Tabelle**
-- [ ] Monats-/Jahresauswahl (Dropdown für 2025) - **Implementierung in Zeitmatrix-Tabelle**
+- [✅] Gesamtarbeitszeit über der Tabelle platziert
+- [ ] Filterzeile farblich hervorgehoben
+- [ ] Monats-/Jahresauswahl (Dropdown für 2025)
 - [✅] Neue Zeitmatrix-Komponente für verbesserte Zeiterfassung
 - [ ] Integration der Zeitmatrix in das Hauptlayout
-- [ ] Kernarbeitszeit-Integration in Zeiteinträge - **Anzeige im Profil**
-- [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit - **Hinweis im TimeEntryModal**
+- [ ] Kernarbeitszeit-Integration in Zeiteinträge
+- [ ] Visuelle Hervorhebung von Einträgen außerhalb der Kernarbeitszeit
 
 ### 👤 Profil
 - [✅] Anzeige und Bearbeitung von Profildaten (Datenbank)
@@ -141,9 +141,9 @@ Dadurch wird eine projektbaum.md erstellt
 - [✅] Telefonnummer und Position (Datenbank)
 
 ### 📁 Projektverwaltung
-- [✅] Projekte abrufen und anzeigen (Datenbank) - **Verwendet im Profil und Zeitmatrix**
+- [✅] Projekte abrufen und anzeigen (Datenbank)
 - [✅] Projekte anlegen, bearbeiten, löschen
-- [✅] Projektbezogene Zeiterfassung (Datenbank) - **Erfassung von Projekten in Zeiteinträgen**
+- [✅] Projektbezogene Zeiterfassung (Datenbank)
 - [✅] Standardprojekt im Profil (Datenbank)
 
 ### ⚙️ Einstellungen
