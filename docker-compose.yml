@@ -12,18 +12,23 @@ services:
     depends_on:
       - db
     environment:
-      - FLASK_ENV=production
-      - DATABASE_URL=postgresql://admin:secret@db:5432/mitarbeiterportal
+    - FLASK_ENV=production
+    - FLASK_DEBUG=1
+    - DATABASE_URL=postgresql://admin:secret@db:5432/mitarbeiterportal
+    - DB_HOST=db
+    - DB_NAME=mitarbeiterportal
+    - DB_USER=admin
+    - DB_PASSWORD=secret
     networks:
       - mitarbeiterportal-network
     restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mitarbeiterportal-frontend
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
+    # Keine volumes: für Produktion!
     environment:
       - REACT_APP_API_URL=http://localhost:3001/api
     networks:
@@ -64,6 +69,18 @@ services:
       timeout: 5s
       retries: 5
     restart: always
+
+  db-init:
+    image: postgres:15
+    depends_on:
+      - db
+    volumes:
+      - ./backend/init_update_data_vault.sql:/init_update_data_vault.sql:ro
+    entrypoint: ["bash", "-c", "sleep 10 && psql -h db -U admin -d mitarbeiterportal -f /init_update_data_vault.sql"]
+    environment:
+      - PGPASSWORD=secret
+    networks:
+      - mitarbeiterportal-network
 
 networks:
   mitarbeiterportal-network:

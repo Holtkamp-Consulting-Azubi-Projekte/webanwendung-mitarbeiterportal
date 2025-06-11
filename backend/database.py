@@ -5,8 +5,10 @@ Implementiert die direkte PostgreSQL-Verbindung mit psycopg2.
 
 import psycopg2
 import os
+import traceback
 from datetime import datetime
 import hashlib
+import uuid
 
 class Database:
     def __init__(self):
@@ -18,11 +20,11 @@ class Database:
         """Stellt die Verbindung zur Datenbank her."""
         try:
             self.conn = psycopg2.connect(
-                dbname="mitarbeiterportal",
-                user="admin",
-                password="secret",
-                host="db",
-                port="5432"
+                host=os.getenv('DB_HOST', 'db'),
+                port=os.getenv('DB_PORT', '5432'),
+                dbname=os.getenv('DB_NAME', 'mitarbeiterportal'),
+                user=os.getenv('DB_USER', 'admin'),
+                password=os.getenv('DB_PASSWORD', 'secret')
             )
             self.cur = self.conn.cursor()
             print("Datenbankverbindung erfolgreich hergestellt")
@@ -68,63 +70,54 @@ class Database:
         return self.cur.fetchall()
 
     def insert_user(self, email, first_name, last_name, password_hash):
-        """Fügt einen neuen Benutzer hinzu."""
+        """Fügt einen neuen Benutzer in die Datenbank ein."""
         try:
-            # Hash-Key für den Benutzer generieren
-            hk_user = hashlib.sha256(email.encode()).digest()
-            now = datetime.utcnow()
-            today = datetime.now().date()
-
-            # Benutzer in H_USER einfügen
+            # UUID als String verwenden
+            hk_user = str(uuid.uuid4())
+            
+            # 1. Einfügen in h_user
             self.execute(
                 """
                 INSERT INTO h_user (hk_user, user_id, t_from, rec_src)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (hk_user, email, now, 'API')
+                VALUES (%s, %s, CURRENT_TIMESTAMP, %s)
+                """, 
+                (hk_user, email, 'WEB_APP')
             )
-
-            # Benutzerdetails in S_USER_DETAILS einfügen
+            
+            # 2. Einfügen in s_user_details
             self.execute(
                 """
-                INSERT INTO s_user_details 
-                (hk_user, t_from, b_from, rec_src, first_name, last_name)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO s_user_details (hk_user, t_from, b_from, rec_src, first_name, last_name)
+                VALUES (%s, CURRENT_TIMESTAMP, CURRENT_DATE, %s, %s, %s)
                 """,
-                (hk_user, now, today, 'API', first_name, last_name)
+                (hk_user, 'WEB_APP', first_name, last_name)
             )
-
-            # Login-Daten in S_USER_LOGIN einfügen
+            
+            # 3. Einfügen in s_user_login
             self.execute(
                 """
-                INSERT INTO s_user_login 
-                (hk_user, t_from, b_from, rec_src, password_hash)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO s_user_login (hk_user, t_from, b_from, rec_src, password_hash)
+                VALUES (%s, CURRENT_TIMESTAMP, CURRENT_DATE, %s, %s)
                 """,
-                (hk_user, now, today, 'API', password_hash)
+                (hk_user, 'WEB_APP', password_hash)
             )
-
-            self.commit()
+            
+            self.conn.commit()
             return hk_user
         except Exception as e:
-            self.rollback()
-            print(f"Fehler in insert_user: {e}")
+            self.conn.rollback()
+            print(f"Fehler beim Einfügen des Benutzers: {e}")
+            traceback.print_exc()
             raise
 
     def get_user_by_email(self, email):
-        """Holt einen Benutzer anhand der E-Mail-Adresse."""
-        return self.fetch_one(
-            """
-            SELECT h.hk_user, h.user_id, 
-                   d.first_name, d.last_name, d.position, d.core_hours, d.telefon,
-                   l.password_hash
+        return self.fetch_one("""
+            SELECT h.hk_user, h.user_id, d.first_name, d.last_name, d.position, d.core_hours, d.telefon, l.password_hash, d.is_admin
             FROM h_user h
-            LEFT JOIN s_user_details d ON d.hk_user = h.hk_user AND d.t_to IS NULL
-            LEFT JOIN s_user_login l ON l.hk_user = h.hk_user AND l.t_to IS NULL
-            WHERE h.user_id = %s
-            """,
-            (email,)
-        )
+            LEFT JOIN s_user_details d ON h.hk_user = d.hk_user AND d.t_to IS NULL
+            LEFT JOIN s_user_login l ON h.hk_user = l.hk_user AND l.t_to IS NULL
+            WHERE h.user_id = %s AND h.t_to IS NULL
+        """, (email,))
 
     def update_user_details(self, hk_user, update_data):
         """Aktualisiert die Benutzerdetails."""
@@ -163,10 +156,19 @@ class Database:
             raise
 
     def update_password(self, hk_user, new_password_hash):
-        """Aktualisiert das Benutzerpasswort."""
+        """
+        Aktualisiert das Passwort eines Benutzers.
+        
+        Args:
+            hk_user (bytes/str): Die HK_USER ID des Benutzers
+            new_password_hash (str): Der Hash des neuen Passworts
+        """
         try:
             now = datetime.utcnow()
             today = datetime.now().date()
+
+            # Debug-Ausgabe
+            print(f"Aktualisiere Passwort für hk_user {hk_user}")
 
             # Aktuelle Login-Daten als historisch markieren
             self.execute(
@@ -189,8 +191,10 @@ class Database:
             )
 
             self.commit()
+            print(f"Passwort erfolgreich aktualisiert für hk_user {hk_user}")
         except Exception as e:
             self.rollback()
+            print(f"Fehler bei Passwortaktualisierung: {str(e)}")
             raise
 
     def get_projects(self):
@@ -202,4 +206,119 @@ class Database:
             LEFT JOIN s_project_details d ON d.hk_project = p.hk_project AND d.t_to IS NULL
             ORDER BY p.project_name
             """
-        ) 
+        )
+
+    def get_all_projects(self):
+        """
+        Holt alle Projekte aus der Datenbank.
+        
+        Returns:
+            list: Eine Liste von Projekt-Dictionaries mit hk_project und project_name
+        """
+        result = self.fetch_all("""
+            SELECT h.hk_project::text as hk_project_hex, s.project_name 
+            FROM h_project h
+            JOIN s_project_details s ON h.hk_project = s.hk_project
+            WHERE s.t_to IS NULL
+            ORDER BY s.project_name
+        """)
+        
+        # Konvertiere das Ergebnis in eine Liste von Dictionaries
+        projects = []
+        for row in result:
+            projects.append({
+                "hk_project": row[0],
+                "project_name": row[1]
+            })
+        return projects
+
+    def update_user_project(self, hk_user, hk_project):
+        """
+        Aktualisiert das aktuelle Projekt eines Benutzers.
+        
+        Args:
+            hk_user (bytes): Die ID des Benutzers
+            hk_project (bytes oder None): Die ID des Projekts oder None, wenn kein Projekt ausgewählt ist
+        """
+        try:
+            now = datetime.utcnow()
+            today = datetime.now().date()
+            
+            # Debug-Ausgabe
+            print(f"UPDATE_USER_PROJECT:")
+            print(f"- hk_user: {hk_user.hex() if isinstance(hk_user, bytes) else hk_user}")
+            if hk_project:
+                print(f"- hk_project: {hk_project.hex() if isinstance(hk_project, bytes) else hk_project}")
+            else:
+                print("- hk_project: None (kein Projekt)")
+            
+            # Aktuelle Projektverknüpfungen als historisch markieren
+            rows_updated = self.execute(
+                """
+                UPDATE s_user_current_project
+                SET t_to = %s, b_to = %s
+                WHERE hk_user = %s AND t_to IS NULL
+                """,
+                (now, today, hk_user)
+            ).rowcount
+            print(f"- Historisierte Einträge: {rows_updated}")
+            
+            # Wenn ein Projekt gesetzt wird, fügen wir es ein
+            if hk_project:
+                # Prüfen, ob das Projekt existiert
+                project_exists = self.fetch_one("""
+                    SELECT COUNT(*) FROM h_project 
+                    WHERE hk_project = %s
+                """, (hk_project,))
+                
+                if not project_exists or project_exists[0] == 0:
+                    print(f"- Projekt existiert nicht in h_project. Erstelle es zuerst")
+                    # Projekt erstellen
+                    self.execute("""
+                        INSERT INTO h_project (hk_project, t_from, rec_src)
+                        VALUES (%s, %s, %s)
+                    """, (hk_project, now, 'API'))
+                    
+                    # Projektdetails erstellen
+                    self.execute("""
+                        INSERT INTO s_project_details 
+                        (hk_project, t_from, b_from, rec_src, project_name, project_description)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (hk_project, now, today, 'API', f'Projekt {hk_project.hex()[:8]}', 'Automatisch erstellt'))
+                    
+                    print(f"- Projekt wurde erstellt: {hk_project.hex()}")
+                
+                # Projekt-Benutzer-Verknüpfung erstellen
+                self.execute(
+                    """
+                    INSERT INTO s_user_current_project 
+                    (hk_user, hk_project, t_from, b_from, rec_src)
+                    VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (hk_user, hk_project, now, today, 'API')
+                )
+                print(f"- Neue Projekt-Benutzer-Verknüpfung erstellt")
+                
+                # Nach dem Einfügen überprüfen, ob die Verknüpfung erstellt wurde
+                check = self.fetch_one("""
+                    SELECT hk_project::text
+                    FROM s_user_current_project
+                    WHERE hk_user = %s AND hk_project = %s AND t_to IS NULL
+                """, (hk_user, hk_project))
+                
+                if check:
+                    print(f"- ERFOLG: Verknüpfung wurde erstellt und ist aktiv: {check[0]}")
+                else:
+                    print("- FEHLER: Verknüpfung konnte nicht erstellt werden!")
+            
+            # WICHTIG: Commit der Transaktion!
+            self.commit()
+            print("- Transaktion erfolgreich abgeschlossen")
+            
+        except Exception as e:
+            # Bei einem Fehler Rollback durchführen
+            self.rollback()
+            print(f"- FEHLER: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise
