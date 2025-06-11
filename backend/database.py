@@ -20,13 +20,16 @@ class Database:
         """Stellt die Verbindung zur Datenbank her."""
         try:
             self.conn = psycopg2.connect(
-                host=os.getenv('DB_HOST', 'db'),
-                port=os.getenv('DB_PORT', '5432'),
-                dbname=os.getenv('DB_NAME', 'mitarbeiterportal'),
-                user=os.getenv('DB_USER', 'admin'),
-                password=os.getenv('DB_PASSWORD', 'secret')
+                host=os.environ['DB_HOST'],
+                port=os.environ['DB_PORT'],
+                dbname=os.environ['DB_NAME'],
+                user=os.environ['DB_USER'],
+                password=os.environ['DB_PASSWORD']
             )
             self.cur = self.conn.cursor()
+            # Schema setzen
+            schema = os.environ.get('DB_SCHEMA', 'mitarbeiterportal')
+            self.cur.execute(f"SET search_path TO {schema};")
             print("Datenbankverbindung erfolgreich hergestellt")
         except Exception as e:
             print(f"Fehler beim Verbinden zur Datenbank: {e}")
