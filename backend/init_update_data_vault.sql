@@ -74,9 +74,6 @@ CREATE TABLE IF NOT EXISTS s_user_details (
     FOREIGN KEY (hk_user) REFERENCES h_user(hk_user)
 );
 
--- Ergänze fehlende Spalte is_admin (falls sie fehlt)
-ALTER TABLE s_user_details ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
-
 -- Satellite für Benutzer-Anmeldedaten (bitemporal)
 CREATE TABLE IF NOT EXISTS s_user_login (
     hk_user UUID NOT NULL,
